@@ -2,7 +2,9 @@
 #define _STM_H_
 
 #include <stdint.h>
-#include <setjmp.h> /* NOT SURE IF SUPORTED */
+#include <setjmp.h> /* NOT SURE IF SUPORTED IN UPMEM */
+
+struct stm_tx;
 
 typedef uintptr_t stm_word_t; /* NOT SURE */
 

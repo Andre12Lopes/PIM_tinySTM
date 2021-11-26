@@ -1,7 +1,13 @@
 #ifndef _STM_INTERNAL_H_
 #define _STM_INTERNAL_H_
 
-#include "stm.h"
+#include "../include/stm.h" // Change latter to specify in the makefie with the -I (flag change to <>)
+
+/* Declare as static arrays (vs. lists) to improve cache locality */
+/* The number transaction local specific for modules. */
+#ifndef MAX_SPECIFIC
+# define MAX_SPECIFIC                   7
+#endif /* MAX_SPECIFIC */
 
 typedef struct r_entry {                /* Read set entry */
   stm_word_t version;                   /* Version read */
@@ -27,7 +33,7 @@ typedef struct w_entry {                /* Write set entry */
         stm_word_t no_drop;             /* WRITE_BACK_CTL: Should we drop lock upon abort? */
       };
     };
-    char padding[CACHELINE_SIZE];       /* Padding (multiple of a cache line) */
+    // char padding[CACHELINE_SIZE];       /* Padding (multiple of a cache line) */
     /* Note padding is not useful here as long as the address can be defined in the lock scheme. */
   };
 } w_entry_t;
@@ -46,7 +52,7 @@ typedef struct w_set {                  /* Write set */
 } w_set_t;
 
 typedef struct stm_tx {                 /* Transaction descriptor */
-  JMP_BUF env;                          /* Environment for setjmp/longjmp */
+  sigjmp_buf env;                          /* Environment for setjmp/longjmp */
   volatile stm_word_t status;           /* Transaction status */
   stm_word_t start;                     /* Start timestamp */
   stm_word_t end;                       /* End timestamp (validity range) */
