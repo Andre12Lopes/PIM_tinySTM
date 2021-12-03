@@ -1,19 +1,42 @@
-#ifndef _STM_H_
-#define _STM_H_
+#ifndef _TINY_H_
+#define _TINY_H_
 
 #include <stdint.h>
-#include <setjmp.h> /* NOT SURE IF SUPORTED IN UPMEM */
 
 struct stm_tx;
 
-typedef uintptr_t stm_word_t; /* NOT SURE */
+typedef uintptr_t stm_word_t;
 
-sigjmp_buf *stm_start_tx(struct stm_tx *tx);
+enum
+{
+    /**
+     * Abort upon writing a memory location being written by another
+     * transaction.
+     */
+    STM_ABORT_WW_CONFLICT = (1 << 6) | (0x04 << 8),
+    /**
+     * Abort upon read due to failed validation.
+     */
+    STM_ABORT_VAL_READ = (1 << 6) | (0x05 << 8),
+    /**
+     * Abort upon writing a memory location being read by another
+     * transaction.
+     */
+    STM_ABORT_RW_CONFLICT = (1 << 6) | (0x02 << 8),
+    /**
+     * Abort upon write due to failed validation.
+     */
+    STM_ABORT_VAL_WRITE = (1 << 6) | (0x06 << 8)
+};
 
-stm_word_t stm_load_tx(struct stm_tx *tx, volatile stm_word_t *addr);
+void stm_start(struct stm_tx *tx);
 
-void stm_store_tx(struct stm_tx *tx, volatile stm_word_t *addr, stm_word_t value);
+/* TODO: Read does not deal well with floating point operations */
+/* TODO: Change return type */
+stm_word_t stm_load(struct stm_tx *tx, volatile stm_word_t *addr);
 
-int stm_commit_tx(struct stm_tx *tx);
+void stm_store(struct stm_tx *tx, volatile stm_word_t *addr, stm_word_t value);
 
-#endif /* _STM_H_ */
+int stm_commit(struct stm_tx *tx);
+
+#endif /* _TINY_H_ */
