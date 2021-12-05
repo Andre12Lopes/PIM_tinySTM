@@ -26,8 +26,18 @@ enum
     /**
      * Abort upon write due to failed validation.
      */
-    STM_ABORT_VAL_WRITE = (1 << 6) | (0x06 << 8)
+    STM_ABORT_VAL_WRITE = (1 << 6) | (0x06 << 8),
+    /**
+     * Abort upon commit due to failed validation.
+     */
+    STM_ABORT_VALIDATE = (1 << 6) | (0x07 << 8),
+    /**
+     * Abort due to reaching the write set size limit.
+     */
+    STM_ABORT_EXTEND_WS = (1 << 6) | (0x0C << 8)
 };
+
+void stm_init(void);
 
 void stm_start(struct stm_tx *tx);
 

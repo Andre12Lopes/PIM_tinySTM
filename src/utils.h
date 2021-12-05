@@ -21,31 +21,33 @@
 
 static inline void *xrealloc(void *addr, size_t size)
 {
-    addr = realloc(addr, size);
-    if (addr == NULL)
-    {
-        perror("realloc");
-        exit(1);
-    }
-    return addr;
+    // addr = realloc(addr, size);
+    // if (addr == NULL)
+    // {
+    //     perror("realloc");
+    //     exit(1);
+    // }
+    // return addr;
+    return NULL;
 }
 
 static inline void *xmalloc_aligned(size_t size)
 {
-    void *memptr;
+    // void *memptr;
 
-    if (posix_memalign(&memptr, CACHELINE_SIZE, size))
-    {
-        memptr = NULL;
-    }
+    // if (posix_memalign(&memptr, CACHELINE_SIZE, size))
+    // {
+    //     memptr = NULL;
+    // }
 
-    if (memptr == NULL)
-    {
-        fprintf(stderr, "Error allocating aligned memory\n");
-        exit(1);
-    }
+    // if (memptr == NULL)
+    // {
+    //     fprintf(stderr, "Error allocating aligned memory\n");
+    //     exit(1);
+    // }
 
-    return memptr;
+    // return memptr;
+    return NULL;
 }
 
 #endif /* !_UTILS_H_ */

@@ -1,6 +1,7 @@
 # Path to root directory
 ROOT ?= .
 
+CC = dpu-upmem-dpurte-clang
 LD = $(CC)
 
 TM = tiny
@@ -54,3 +55,6 @@ $(TMLIB): $(SRCDIR)/$(TM).o
 
 clean:
 	rm -f $(TMLIB) $(SRCDIR)/*.o
+
+
+# gcc -I/home/andre/Documents/PIM_tinySTM/src -o prog main.c -L/home/andre/Documents/PIM_tinySTM/lib/ -l tiny

@@ -1,6 +1,8 @@
 #ifndef _TINY_WTETL_H_
 #define _TINY_WTETL_H_
 
+#include <assert.h>
+
 static inline void 
 stm_wtetl_add_to_rs(stm_tx_t *tx, stm_word_t version, volatile stm_word_t *lock)
 {
@@ -364,6 +366,47 @@ do_write:
     tx->w_set.nb_entries++;
 
     return w;
+}
+
+static inline int
+stm_wtetl_commit(stm_tx_t *tx)
+{
+    w_entry_t *w;
+    stm_word_t t;
+    int i;
+
+    PRINT_DEBUG("==> stm_wt_commit(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
+
+
+    /* Get commit timestamp (may exceed VERSION_MAX by up to MAX_THREADS) */
+    t = FETCH_INC_CLOCK + 1;
+
+    /* Try to validate (only if a concurrent transaction has committed since tx->start) */
+    if (tx->start != t - 1 && !stm_wtetl_validate(tx))
+    {
+        /* Cannot commit */
+        stm_rollback(tx, STM_ABORT_VALIDATE);
+        return 0;
+    }
+
+    /* Make sure that the updates become visible before releasing locks */
+    // ATOMIC_MB_WRITE;
+    /* Drop locks and set new timestamp */
+    w = tx->w_set.entries;
+    for (i = tx->w_set.nb_entries; i > 0; i--, w++)
+    {
+        if (w->next == NULL)
+        {
+            /* No need for CAS (can only be modified by owner transaction) */
+            ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(t));
+        }
+    }
+
+    /* Make sure that all lock releases become visible */
+    /* TODO: is ATOMIC_MB_WRITE required? */
+    // ATOMIC_MB_WRITE;
+
+    return 1;
 }
 
 #endif /* _TINY_WTETL_H_ */
