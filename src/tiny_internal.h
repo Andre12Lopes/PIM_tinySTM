@@ -15,12 +15,11 @@
 #endif
 
 #define OWNED_BITS                  1 /* 1 bit */
-#define INCARNATION_BITS            3 /* 3 bits */
+#define INCARNATION_BITS            7 /* 7 bits */
 #define LOCK_BITS                   (OWNED_BITS + INCARNATION_BITS)
 
 #define WRITE_MASK                  0x01
 #define OWNED_MASK                  (WRITE_MASK)
-#define INCARNATION_BITS            3 /* 3 bits */
 #define INCARNATION_MAX             ((1 << INCARNATION_BITS) - 1)
 #define INCARNATION_MASK            (INCARNATION_MAX << 1)
 
@@ -69,7 +68,7 @@ typedef struct r_entry
 typedef struct r_set
 {                            /* Read set */
     // r_entry_t *entries;      /* Array of entries */
-    r_entry_t entries[10];      /* Array of entries */
+    r_entry_t entries[4];      /* Array of entries */
     unsigned int nb_entries; /* Number of entries */
     unsigned int size;       /* Size of array */
 } r_set_t;
@@ -97,7 +96,7 @@ typedef struct w_entry
 typedef struct w_set
 {                            /* Write set */
     // w_entry_t *entries;      /* Array of entries */
-    w_entry_t entries[10];      /* Array of entries */
+    w_entry_t entries[4];      /* Array of entries */
     unsigned int nb_entries; /* Number of entries */
     unsigned int size;       /* Size of array */
 } w_set_t;
@@ -184,8 +183,8 @@ int_stm_prepare(stm_tx_t *tx)
     tx->w_set.nb_entries = 0;
     tx->r_set.nb_entries = 0;
 
-    tx->w_set.size = 10;
-    tx->r_set.size = 10;
+    tx->w_set.size = 4;
+    tx->r_set.size = 4;
 
     // start:
     /* Start timestamp */
