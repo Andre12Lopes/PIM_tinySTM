@@ -26,6 +26,7 @@ void stm_start(stm_tx_t *tx)
 
 stm_word_t stm_load(stm_tx_t *tx, volatile stm_word_t *addr)
 {
+    // printf(">>>>>>>>>>>>>>>>> TX = %p\n", tx);
     return int_stm_load(tx, addr);
 }
 

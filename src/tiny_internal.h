@@ -1,21 +1,22 @@
 #ifndef _TINY_INTERNAL_H_
 #define _TINY_INTERNAL_H_
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "atomic.h"
 #include "utils.h"
 
 #ifndef LOCK_ARRAY_LOG_SIZE
-#define LOCK_ARRAY_LOG_SIZE         10 /* Size of lock array: 2^10 = 1024 */
+#define LOCK_ARRAY_LOG_SIZE         10                  /* Size of lock array: 2^10 = 1024 */
 #endif
 
 #ifndef LOCK_SHIFT_EXTRA
 #define LOCK_SHIFT_EXTRA            2
 #endif
 
-#define OWNED_BITS                  1 /* 1 bit */
-#define INCARNATION_BITS            7 /* 7 bits */
+#define OWNED_BITS                  1                   /* 1 bit */
+#define INCARNATION_BITS            7                   /* 7 bits */
 #define LOCK_BITS                   (OWNED_BITS + INCARNATION_BITS)
 
 #define WRITE_MASK                  0x01
@@ -30,7 +31,7 @@
 #define LOCK_GET_TIMESTAMP(l)       (l >> (LOCK_BITS))
 #define LOCK_SET_TIMESTAMP(t)       (t << (LOCK_BITS))
 #define LOCK_GET_INCARNATION(l)     ((l & INCARNATION_MASK) >> OWNED_BITS)
-#define LOCK_SET_INCARNATION(i)     (i << OWNED_BITS) /* OWNED bit not set */
+#define LOCK_SET_INCARNATION(i)     (i << OWNED_BITS)   /* OWNED bit not set */
 #define LOCK_UPD_INCARNATION(l, i)  ((l & ~(stm_word_t)(INCARNATION_MASK | OWNED_MASK)) | LOCK_SET_INCARNATION(i))
 
 #define LOCK_ARRAY_SIZE             (1 << LOCK_ARRAY_LOG_SIZE)
@@ -41,12 +42,12 @@
 
 #define CLOCK                       (_tinystm.gclock)
 #define GET_CLOCK                   (ATOMIC_LOAD_ACQ(&CLOCK))
-#define FETCH_INC_CLOCK             (ATOMIC_FETCH_INC_FULL(&CLOCK))
+#define FETCH_INC_CLOCK             (ATOMIC_FETCH_INC_FULL(&CLOCK, 1))
 
 enum
-{ /* Transaction status */
+{                                           /* Transaction status */
     TX_IDLE = 0,
-    TX_ACTIVE = 1, /* Lowest bit indicates activity */
+    TX_ACTIVE = 1,                          /* Lowest bit indicates activity */
     TX_COMMITTED = (1 << 1),
     TX_ABORTED = (2 << 1),
     TX_COMMITTING = (1 << 1) | TX_ACTIVE,
@@ -67,15 +68,15 @@ typedef struct r_entry
 
 typedef struct r_set
 {                            /* Read set */
-    // r_entry_t *entries;      /* Array of entries */
-    r_entry_t entries[4];      /* Array of entries */
+    // r_entry_t *entries;   /* Array of entries */
+    r_entry_t entries[2];    /* Array of entries */
     unsigned int nb_entries; /* Number of entries */
     unsigned int size;       /* Size of array */
 } r_set_t;
 
 typedef struct w_entry
-{           /* Write set entry */
-    union { /* For padding... */
+{                                       /* Write set entry */
+    union {                             /* For padding... */
         struct
         {
             volatile stm_word_t *addr; /* Address written */
@@ -95,8 +96,8 @@ typedef struct w_entry
 
 typedef struct w_set
 {                            /* Write set */
-    // w_entry_t *entries;      /* Array of entries */
-    w_entry_t entries[4];      /* Array of entries */
+    // w_entry_t *entries;   /* Array of entries */
+    w_entry_t entries[2];    /* Array of entries */
     unsigned int nb_entries; /* Number of entries */
     unsigned int size;       /* Size of array */
 } w_set_t;
@@ -183,8 +184,8 @@ int_stm_prepare(stm_tx_t *tx)
     tx->w_set.nb_entries = 0;
     tx->r_set.nb_entries = 0;
 
-    tx->w_set.size = 4;
-    tx->r_set.size = 4;
+    tx->w_set.size = 3;
+    tx->r_set.size = 3;
 
     // start:
     /* Start timestamp */
@@ -231,11 +232,13 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
 
     assert(IS_ACTIVE(tx->status));
 
+    // printf("REASON = %u\n", reason);
+
     stm_wtetl_rollback(tx); // TODO
 
     /* Set status to ABORTED */
     SET_STATUS(tx->status, TX_ABORTED);
-
+    
     /* Abort for extending the write set */
     // if (reason == STM_ABORT_EXTEND_WS)
     // {
@@ -246,7 +249,7 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
     tx->nesting = 1;
 
     /* Reset field to restart transaction */
-    int_stm_prepare(tx);
+    //int_stm_prepare(tx);
 }
 
 static inline stm_word_t 

@@ -2,6 +2,7 @@
 #define _TINY_WTETL_H_
 
 #include <assert.h>
+#include <stdio.h>
 
 static inline void 
 stm_wtetl_add_to_rs(stm_tx_t *tx, stm_word_t version, volatile stm_word_t *lock)
@@ -102,7 +103,7 @@ stm_wtetl_rollback(stm_tx_t *tx)
     w_entry_t *w;
     // stm_word_t t;
 
-    PRINT_DEBUG("==> stm_wtetl_rollback(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
+    printf("==> stm_wtetl_rollback(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
 
     assert(IS_ACTIVE(tx->status));
 
@@ -111,11 +112,13 @@ stm_wtetl_rollback(stm_tx_t *tx)
     w = tx->w_set.entries;
     for (i = tx->w_set.nb_entries; i > 0; i--, w++)
     {
-        stm_word_t j;
+        // stm_word_t j;
 
         /* Restore previous value */
         if (w->mask != 0)
         {
+            printf("TX = %p\n", tx);
+            printf("ADDR = %p\n", w->addr);
             ATOMIC_STORE(w->addr, w->value);
         }
 
@@ -123,28 +126,30 @@ stm_wtetl_rollback(stm_tx_t *tx)
         {
             continue;
         }
-
+        // TODO
         /* Incarnation numbers allow readers to detect dirty reads */
-        j = LOCK_GET_INCARNATION(w->version) + 1;
+        // j = LOCK_GET_INCARNATION(w->version) + 1;
         // if (j > INCARNATION_MAX)
         // {
         //     /* Simple approach: write new version (might trigger unnecessary
-        //     aborts) */ if (t == 0)
+        //     aborts) */ 
+        //     if (t == 0)
         //     {
         //         /* Get new version (may exceed VERSION_MAX by up to
-        //         MAX_THREADS) */ t = FETCH_INC_CLOCK + 1;
+        //         MAX_THREADS) */ 
+        //         t = FETCH_INC_CLOCK + 1;
         //     }
         //     ATOMIC_STORE_REL(w->lock, LOCK_SET_TIMESTAMP(t));
         // }
         // else
         // {
         /* Use new incarnation number */
-        ATOMIC_STORE_REL(w->lock, LOCK_UPD_INCARNATION(w->version, j));
+        //      ATOMIC_STORE_REL(w->lock, LOCK_UPD_INCARNATION(w->version, j));
         // }
     }
 
     /* Make sure that all lock releases become visible */
-    // ATOMIC_MB_WRITE; // TODO:
+    ATOMIC_B_WRITE;
 }
 
 static inline stm_word_t 
@@ -219,7 +224,7 @@ static inline w_entry_t *
 stm_wtetl_write(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
     volatile stm_word_t *lock;
-    stm_word_t l, version;
+    stm_word_t l, l1, version;
     w_entry_t *w;
     w_entry_t *prev = NULL;
 
@@ -286,6 +291,8 @@ restart:
             /* Must add to write set */
             if (tx->w_set.nb_entries == tx->w_set.size)
             {
+                printf("[Warning!] Temporary exit, remove on final version\n");
+                exit(1);
                 stm_rollback(tx, STM_ABORT_EXTEND_WS);
             }
 
@@ -318,14 +325,26 @@ restart:
 
     if (tx->w_set.nb_entries == tx->w_set.size)
     {
+        printf("[Warning!] Temporary exit, remove on final version\n");
+        exit(1);
         stm_rollback(tx, STM_ABORT_EXTEND_WS);
     }
 
     w = &tx->w_set.entries[tx->w_set.nb_entries];
-    if (ATOMIC_CAS_FULL(lock, l, LOCK_SET_ADDR_WRITE((stm_word_t)w)) == 0)
+
+    acquire(lock);
+
+    l1 = ATOMIC_LOAD_ACQ(lock);
+
+    if (l != l1)
     {
+        release(lock);
         goto restart;
     }
+
+    ATOMIC_STORE(lock, LOCK_SET_ADDR_WRITE((stm_word_t)w));
+
+    release(lock);
 
     /* We store the old value of the lock (timestamp and incarnation) */
     w->version = l;
@@ -390,7 +409,7 @@ stm_wtetl_commit(stm_tx_t *tx)
     }
 
     /* Make sure that the updates become visible before releasing locks */
-    // ATOMIC_MB_WRITE;
+    ATOMIC_B_WRITE;
     /* Drop locks and set new timestamp */
     w = tx->w_set.entries;
     for (i = tx->w_set.nb_entries; i > 0; i--, w++)
@@ -404,7 +423,7 @@ stm_wtetl_commit(stm_tx_t *tx)
 
     /* Make sure that all lock releases become visible */
     /* TODO: is ATOMIC_MB_WRITE required? */
-    // ATOMIC_MB_WRITE;
+    ATOMIC_B_WRITE;
 
     return 1;
 }

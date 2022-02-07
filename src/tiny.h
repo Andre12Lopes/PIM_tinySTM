@@ -17,7 +17,7 @@ enum
     /**
      * Abort upon read due to failed validation.
      */
-    STM_ABORT_VAL_READ = (1 << 6) | (0x05 << 8),
+    STM_ABORT_VAL_READ = (1 << 6) | (0x05 << 8), // 1344
     /**
      * Abort upon writing a memory location being read by another
      * transaction.
@@ -26,7 +26,7 @@ enum
     /**
      * Abort upon write due to failed validation.
      */
-    STM_ABORT_VAL_WRITE = (1 << 6) | (0x06 << 8),
+    STM_ABORT_VAL_WRITE = (1 << 6) | (0x06 << 8), // 1600
     /**
      * Abort upon commit due to failed validation.
      */

@@ -19,7 +19,8 @@
 #define CACHELINE_SIZE 64 /* TODO: Change to DPU */
 #endif
 
-static inline void *xrealloc(void *addr, size_t size)
+static inline void *
+xrealloc(void *addr, size_t size)
 {
     // addr = realloc(addr, size);
     // if (addr == NULL)
@@ -31,7 +32,8 @@ static inline void *xrealloc(void *addr, size_t size)
     return NULL;
 }
 
-static inline void *xmalloc_aligned(size_t size)
+static inline void *
+xmalloc_aligned(size_t size)
 {
     // void *memptr;
 
