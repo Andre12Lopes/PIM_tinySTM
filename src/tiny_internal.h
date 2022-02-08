@@ -184,12 +184,13 @@ int_stm_prepare(stm_tx_t *tx)
     tx->w_set.nb_entries = 0;
     tx->r_set.nb_entries = 0;
 
-    tx->w_set.size = 3;
-    tx->r_set.size = 3;
+    tx->w_set.size = 2;
+    tx->r_set.size = 2;
 
     // start:
     /* Start timestamp */
     tx->start = tx->end = GET_CLOCK; /* OPT: Could be delayed until first read/write */
+    
     // if (tx->start >= VERSION_MAX)
     // {
     //     /* Block all transactions and reset clock
@@ -212,10 +213,10 @@ int_stm_start(stm_tx_t *tx)
      * with parent ones.  */
 
     /* Increment nesting level */
-    if (tx->nesting++ > 0)
-    {
-        return;
-    }
+    // if (tx->nesting++ > 0)
+    // {
+    //     return;
+    // }
 
     /* Initialize transaction descriptor */
     int_stm_prepare(tx);
@@ -232,13 +233,11 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
 
     assert(IS_ACTIVE(tx->status));
 
-    // printf("REASON = %u\n", reason);
-
     stm_wtetl_rollback(tx); // TODO
 
     /* Set status to ABORTED */
     SET_STATUS(tx->status, TX_ABORTED);
-    
+
     /* Abort for extending the write set */
     // if (reason == STM_ABORT_EXTEND_WS)
     // {
@@ -270,10 +269,11 @@ int_stm_commit(stm_tx_t *tx)
     PRINT_DEBUG("==> stm_commit(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
 
     /* Decrement nesting level */
-    if (--tx->nesting > 0)
-    {
-        return 1;
-    }
+    // if (--tx->nesting > 0)
+    // {
+    //     printf("PUPPY HERE!");
+    //     return 1;
+    // }
 
     assert(IS_ACTIVE(tx->status));
 
