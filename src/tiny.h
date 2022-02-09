@@ -13,7 +13,7 @@ enum
      * Abort upon writing a memory location being written by another
      * transaction.
      */
-    STM_ABORT_WW_CONFLICT = (1 << 6) | (0x04 << 8),
+    STM_ABORT_WW_CONFLICT = (1 << 6) | (0x04 << 8), // 1088
     /**
      * Abort upon read due to failed validation.
      */

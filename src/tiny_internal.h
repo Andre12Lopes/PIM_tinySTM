@@ -16,7 +16,7 @@
 #endif
 
 #define OWNED_BITS                  1                   /* 1 bit */
-#define INCARNATION_BITS            7                   /* 7 bits */
+#define INCARNATION_BITS            3                   /* 3 bits */
 #define LOCK_BITS                   (OWNED_BITS + INCARNATION_BITS)
 
 #define WRITE_MASK                  0x01
@@ -41,7 +41,7 @@
 #define GET_LOCK(a)                 (_tinystm.locks + LOCK_IDX(a))
 
 #define CLOCK                       (_tinystm.gclock)
-#define GET_CLOCK                   (ATOMIC_LOAD_ACQ(&CLOCK))
+#define GET_CLOCK                   (ATOMIC_GET_CLOCK_VALUE(&CLOCK))
 #define FETCH_INC_CLOCK             (ATOMIC_FETCH_INC_FULL(&CLOCK, 1))
 
 enum
@@ -190,7 +190,10 @@ int_stm_prepare(stm_tx_t *tx)
     // start:
     /* Start timestamp */
     tx->start = tx->end = GET_CLOCK; /* OPT: Could be delayed until first read/write */
-    
+    if (tx->start == 0)
+    {
+        // printf(">>>>>>>>>>>>>>>>>>>>> TX = %p, CLOCK = %u, DIRECT CLOCK = %u\n", tx, GET_CLOCK, _tinystm.gclock);
+    }
     // if (tx->start >= VERSION_MAX)
     // {
     //     /* Block all transactions and reset clock
@@ -233,6 +236,8 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
 
     assert(IS_ACTIVE(tx->status));
 
+    printf("REASON = %u, TX = %p\n", reason, tx);
+
     stm_wtetl_rollback(tx); // TODO
 
     /* Set status to ABORTED */
@@ -271,7 +276,6 @@ int_stm_commit(stm_tx_t *tx)
     /* Decrement nesting level */
     // if (--tx->nesting > 0)
     // {
-    //     printf("PUPPY HERE!");
     //     return 1;
     // }
 

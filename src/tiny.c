@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "tiny.h"
@@ -8,11 +9,13 @@ global_t _tinystm;
 
 void stm_init(void)
 {
+    printf("Initialized STM\n");
+
     if (_tinystm.initialized)
     {
         return;
     }
-
+    
     memset((void *)_tinystm.locks, 0, LOCK_ARRAY_SIZE * sizeof(stm_word_t));
     // CLOCK = 0
 

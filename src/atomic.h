@@ -10,6 +10,8 @@
 
 #define ATOMIC_B_WRITE __asm__ __volatile__("" : : : "memory")
 
+#define ATOMIC_GET_CLOCK_VALUE(a) (AO_get_clock_value((volatile size_t *)(a)))
+
 static inline size_t 
 AO_load_read(const volatile size_t *addr)
 {
@@ -24,6 +26,20 @@ AO_store_write(volatile size_t *addr, size_t val)
 {
     __asm__ __volatile__("" : : : "memory");
     (*(size_t *)addr) = val;
+}
+
+static inline size_t 
+AO_get_clock_value(const volatile size_t *addr)
+{
+    size_t result;
+
+    __asm__ __volatile__("acquire %[p], 0, nz, ." : : [p] "r"(addr) :);
+
+    result = (*addr);
+
+    __asm__ __volatile__("release %[p], 0, nz, .+1" : : [p] "r"(addr) :);
+
+    return result;
 }
 
 static inline size_t 

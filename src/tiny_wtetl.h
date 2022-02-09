@@ -117,8 +117,10 @@ stm_wtetl_rollback(stm_tx_t *tx)
         /* Restore previous value */
         if (w->mask != 0)
         {
-            printf("TX = %p\n", tx);
-            printf("ADDR = %p\n", w->addr);
+            // printf("TX = %p\n", tx);
+            // printf("ADDR = %p\n", w->addr);
+            // printf("NEXT = %p\n", w->next);
+            // printf("VERS = %u\n", w->version);
             ATOMIC_STORE(w->addr, w->value);
         }
 
@@ -146,6 +148,10 @@ stm_wtetl_rollback(stm_tx_t *tx)
         /* Use new incarnation number */
         //      ATOMIC_STORE_REL(w->lock, LOCK_UPD_INCARNATION(w->version, j));
         // }
+
+        // TODO -> change to account for incarnation
+        // printf("############################ LOCK = %p\n", w->lock);
+        ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(w->version));        
     }
 
     /* Make sure that all lock releases become visible */
@@ -159,7 +165,7 @@ stm_wtetl_read(stm_tx_t *tx, volatile stm_word_t *addr)
     stm_word_t l1, l2, value, version;
     w_entry_t *w;
 
-    PRINT_DEBUG("==> stm_wt_read(t=%p[%lu-%lu],a=%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, addr);
+    // printf("==> stm_wt_read(t=%p[%lu-%lu],a=%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, addr);
 
     // Read lock
     lock_addr = GET_LOCK(addr);
@@ -214,6 +220,7 @@ restart_no_load:
             return value;
         }
 
+        // printf(">>>>>>>> TX = %p, %p -> ENTRY IN LOCK = %p, ENTY = %u | ADDR = %p | LOCK = %p\n", tx, tx->w_set.entries, w, l1, addr, lock_addr);
         stm_rollback(tx, STM_ABORT_RW_CONFLICT);
 
         return 0;
@@ -228,8 +235,8 @@ stm_wtetl_write(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_w
     w_entry_t *w;
     w_entry_t *prev = NULL;
 
-    PRINT_DEBUG("==> stm_wt_write(t=%p[%lu-%lu],a=%p,d=%p-%lu,m=0x%lx)\n", tx, (unsigned long)tx->start,
-                (unsigned long)tx->end, addr, (void *)value, (unsigned long)value, (unsigned long)mask);
+    // printf("==> stm_wt_write(t=%p[%lu-%lu],a=%p,d=%p-%lu,m=0x%lx)\n", tx, (unsigned long)tx->start,
+    //             (unsigned long)tx->end, addr, (void *)value, (unsigned long)value, (unsigned long)mask);
 
     assert(IS_ACTIVE(tx->status));
 
@@ -249,6 +256,7 @@ restart:
          * non-faulting load) */
         if (tx->w_set.entries <= w && w < tx->w_set.entries + tx->w_set.nb_entries)
         {
+            // printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TX = %p | ADDR = %p | LOCK = %p\n", tx, addr, lock);
             /* We own the lock */
             if (mask == 0)
             {
@@ -291,9 +299,9 @@ restart:
             /* Must add to write set */
             if (tx->w_set.nb_entries == tx->w_set.size)
             {
+                stm_rollback(tx, STM_ABORT_EXTEND_WS);
                 printf("[Warning!] Temporary exit, remove on final version\n");
                 exit(1);
-                stm_rollback(tx, STM_ABORT_EXTEND_WS);
             }
 
             w = &tx->w_set.entries[tx->w_set.nb_entries];
@@ -311,7 +319,7 @@ restart:
     /* Not locked */
     /* Handle write after reads (before CAS) */
     version = LOCK_GET_TIMESTAMP(l);
-
+    // printf("Version = %u | END = %u\n", version, tx->end);
     if (version > tx->end)
     {
         if (stm_has_read(tx, lock) != NULL)
@@ -325,9 +333,9 @@ restart:
 
     if (tx->w_set.nb_entries == tx->w_set.size)
     {
+        stm_rollback(tx, STM_ABORT_EXTEND_WS);
         printf("[Warning!] Temporary exit, remove on final version\n");
         exit(1);
-        stm_rollback(tx, STM_ABORT_EXTEND_WS);
     }
 
     w = &tx->w_set.entries[tx->w_set.nb_entries];
@@ -342,12 +350,14 @@ restart:
         goto restart;
     }
 
+    // printf("------------------------ TX = %p | LOCK = %p | N ENTRIES = %u | STATUS = %u\n", tx, lock, tx->w_set.nb_entries, tx->status);
     ATOMIC_STORE(lock, LOCK_SET_ADDR_WRITE((stm_word_t)w));
 
     release(lock);
 
     /* We store the old value of the lock (timestamp and incarnation) */
-    w->version = l;
+    // w->version = l;
+    w->version = LOCK_GET_TIMESTAMP(l); // TODO: disregarding incarnation
     /* We own the lock here (ETL) */
 do_write:
     /* Add address to write set */
@@ -404,6 +414,7 @@ stm_wtetl_commit(stm_tx_t *tx)
     if (tx->start != t - 1 && !stm_wtetl_validate(tx))
     {
         /* Cannot commit */
+        // printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAA TX = %p\n", tx);
         stm_rollback(tx, STM_ABORT_VALIDATE);
         return 0;
     }
@@ -412,12 +423,24 @@ stm_wtetl_commit(stm_tx_t *tx)
     ATOMIC_B_WRITE;
     /* Drop locks and set new timestamp */
     w = tx->w_set.entries;
+    if (tx->w_set.nb_entries != 2)
+    {
+        // printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TX = %p | N ENTRIES = %u | STATUS = %u\n", tx, tx->w_set.nb_entries, tx->status);
+    }
     for (i = tx->w_set.nb_entries; i > 0; i--, w++)
     {
         if (w->next == NULL)
         {
+            // printf("$$$$$$$$$$$$$$$$$$ LOCK = %p\n", w->lock);
             /* No need for CAS (can only be modified by owner transaction) */
             ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(t));
+
+            // stm_word_t l;
+            // l = ATOMIC_LOAD_ACQ(w->lock);
+            // if (l & 0x01)
+            // {
+            //     printf("++++++++++++++++++++++++++ %u\n", l);
+            // }
         }
     }
 
