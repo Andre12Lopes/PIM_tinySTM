@@ -220,7 +220,7 @@ restart_no_load:
             return value;
         }
 
-        // printf(">>>>>>>> TX = %p, %p -> ENTRY IN LOCK = %p, ENTY = %u | ADDR = %p | LOCK = %p\n", tx, tx->w_set.entries, w, l1, addr, lock_addr);
+        printf(">>>>>>>> TX = %p, %p -> ENTRY IN LOCK = %p, ENTY = %u | ADDR = %p | LOCK = %p\n", tx, tx->w_set.entries, w, l1, addr, lock_addr);
         stm_rollback(tx, STM_ABORT_RW_CONFLICT);
 
         return 0;

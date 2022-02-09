@@ -38,7 +38,11 @@
 
 BARRIER_INIT(my_barrier, NR_TASKLETS);
 
-unsigned int bank[100];
+#define N_ACOUNTS 10
+
+unsigned int bank[N_ACOUNTS];
+
+
 
 int main()
 {
@@ -49,7 +53,7 @@ int main()
 
     if (me() == 0)
     {
-        for (int i = 0; i < 100; ++i)
+        for (int i = 0; i < N_ACOUNTS; ++i)
         {
             bank[i] = 100;
         }
@@ -61,29 +65,37 @@ int main()
 
     s = (uint64_t)me();
 
+    int s1 = me();
+
     buddy_init(4096);
 
     // ------------------------------------------------------
 
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < 10; ++i)
     {
         tx = buddy_alloc(sizeof(struct stm_tx));
 
-        ra = RAND_R_FNC(s) % 100;
-        rb = RAND_R_FNC(s) % 100;
+        ra = RAND_R_FNC(s) % N_ACOUNTS;
+        rb = RAND_R_FNC(s) % N_ACOUNTS;
+
+        // ra = 0;
+        // rb = 0;
+        // printf("RA = %u RB = %u, TID = %d\n", ra, rb, s1);
+
 
         START(tx);
 
         a = LOAD(tx, &bank[ra]);
-        b = LOAD(tx, &bank[rb]);
-
         a -= TRANSFER;
-        b += TRANSFER;
-
         STORE(tx, &bank[ra], a);
+
+        b = LOAD(tx, &bank[rb]);
+        b += TRANSFER;
         STORE(tx, &bank[rb], b);
 
         COMMIT(tx);
+
+        // printf("A = %u B = %u, TID = %d\n", a, b, s1);
 
         buddy_free(tx);
     }
@@ -96,7 +108,7 @@ int main()
     {
         printf("[");
         unsigned int total = 0;
-        for (int i = 0; i < 100; ++i)
+        for (int i = 0; i < N_ACOUNTS; ++i)
         {
             printf("%u,", bank[i]);
             total += bank[i];
