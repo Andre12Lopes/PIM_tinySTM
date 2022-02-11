@@ -103,7 +103,7 @@ stm_wtetl_rollback(stm_tx_t *tx)
     w_entry_t *w;
     // stm_word_t t;
 
-    printf("==> stm_wtetl_rollback(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
+    // printf("==> stm_wtetl_rollback(%p[%lu-%lu]) N entries = %u\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, tx->w_set.nb_entries);
 
     assert(IS_ACTIVE(tx->status));
 
@@ -113,7 +113,6 @@ stm_wtetl_rollback(stm_tx_t *tx)
     for (i = tx->w_set.nb_entries; i > 0; i--, w++)
     {
         // stm_word_t j;
-
         /* Restore previous value */
         if (w->mask != 0)
         {
@@ -151,7 +150,13 @@ stm_wtetl_rollback(stm_tx_t *tx)
 
         // TODO -> change to account for incarnation
         // printf("############################ LOCK = %p\n", w->lock);
-        ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(w->version));        
+        ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(w->version));
+        // *(w->lock) = LOCK_SET_TIMESTAMP(w->version);
+
+        // stm_word_t l;
+        // l = ATOMIC_LOAD_ACQ(w->lock);
+        // printf("=================== Entry = %u | DIRECT ENTRY = | NEXT = %p | LOCK = %p | ADDR = %p | N ENTRIES = %u | VERSION = %u\n", l, w->next, w->lock, w->addr, tx->w_set.nb_entries, w->version);
+        // assert(!LOCK_GET_OWNED(l));     
     }
 
     /* Make sure that all lock releases become visible */
@@ -180,6 +185,7 @@ restart_no_load:
 
         if (l1 != l2)
         {
+            // printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
             l1 = l2;
             goto restart_no_load;
         }
@@ -220,7 +226,7 @@ restart_no_load:
             return value;
         }
 
-        printf(">>>>>>>> TX = %p, %p -> ENTRY IN LOCK = %p, ENTY = %u | ADDR = %p | LOCK = %p\n", tx, tx->w_set.entries, w, l1, addr, lock_addr);
+        // printf(">>>>>>>> TX = %p, %p -> ENTRY IN LOCK = %p, ENTRY = %u | ADDR = %p | LOCK = %p\n", tx, tx->w_set.entries, w, l1, addr, lock_addr);
         stm_rollback(tx, STM_ABORT_RW_CONFLICT);
 
         return 0;
@@ -270,11 +276,11 @@ restart:
             {
                 if (addr == prev->addr)
                 {
-                    if (prev->mask == 0)
+                    if (w->mask == 0)
                     {
                         /* Remember old value */
-                        prev->value = ATOMIC_LOAD(addr);
-                        prev->mask = mask;
+                        w->value = ATOMIC_LOAD(addr);
+                        w->mask = mask;
                     }
 
                     /* Yes: only write to memory */
@@ -284,7 +290,7 @@ restart:
                     }
 
                     ATOMIC_STORE(addr, value);
-                    return prev;
+                    return w;
                 }
 
                 if (prev->next == NULL)
@@ -350,8 +356,8 @@ restart:
         goto restart;
     }
 
-    // printf("------------------------ TX = %p | LOCK = %p | N ENTRIES = %u | STATUS = %u\n", tx, lock, tx->w_set.nb_entries, tx->status);
     ATOMIC_STORE(lock, LOCK_SET_ADDR_WRITE((stm_word_t)w));
+    // printf("------------------------ TX = %p | LOCK = %u | N ENTRIES = %u | STATUS = %u\n", tx, *lock, tx->w_set.nb_entries, tx->status);
 
     release(lock);
 
@@ -414,7 +420,6 @@ stm_wtetl_commit(stm_tx_t *tx)
     if (tx->start != t - 1 && !stm_wtetl_validate(tx))
     {
         /* Cannot commit */
-        // printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAA TX = %p\n", tx);
         stm_rollback(tx, STM_ABORT_VALIDATE);
         return 0;
     }
@@ -423,25 +428,18 @@ stm_wtetl_commit(stm_tx_t *tx)
     ATOMIC_B_WRITE;
     /* Drop locks and set new timestamp */
     w = tx->w_set.entries;
-    if (tx->w_set.nb_entries != 2)
-    {
-        // printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TX = %p | N ENTRIES = %u | STATUS = %u\n", tx, tx->w_set.nb_entries, tx->status);
-    }
     for (i = tx->w_set.nb_entries; i > 0; i--, w++)
     {
         if (w->next == NULL)
         {
-            // printf("$$$$$$$$$$$$$$$$$$ LOCK = %p\n", w->lock);
             /* No need for CAS (can only be modified by owner transaction) */
             ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(t));
-
-            // stm_word_t l;
-            // l = ATOMIC_LOAD_ACQ(w->lock);
-            // if (l & 0x01)
-            // {
-            //     printf("++++++++++++++++++++++++++ %u\n", l);
-            // }
         }
+
+        // stm_word_t l;
+        // l = ATOMIC_LOAD_ACQ(w->lock);
+        // printf("=================== Entry = %u CLOCK = %u | NEXT = %p | LOCK = %p | ADDR = %p | N ENTRIES = %u\n", *(w->lock), t, w->next, w->lock, w->addr, tx->w_set.nb_entries);
+        // assert(!LOCK_GET_OWNED(l));
     }
 
     /* Make sure that all lock releases become visible */

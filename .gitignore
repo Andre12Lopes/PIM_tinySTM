@@ -2,5 +2,11 @@
 *.o
 *.so
 *.a
+*.s
+*.o.*
 
 .clang-format
+
+pre.txt
+test/bank/diff
+test/bank/file

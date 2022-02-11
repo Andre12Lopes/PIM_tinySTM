@@ -11,7 +11,7 @@ TMLIB = $(LIBDIR)/lib$(TM).a
 TARGET = bank
 
 CFLAGS += -Wall
-CFLAGS += -Wno-unused-label -Wno-unused-function
+CFLAGS += -Wno-unused-label -Wno-unused-function -std=c11
 
 LDFLAGS += -L$(LIBDIR) -l$(TM)
 CPPFLAGS += -I$(SRCDIR)

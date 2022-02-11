@@ -236,9 +236,9 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
 
     assert(IS_ACTIVE(tx->status));
 
-    printf("REASON = %u, TX = %p\n", reason, tx);
+    // printf("REASON = %u, TX = %p, TMIE = %lu\n", reason, tx, (unsigned long)tx->start);
 
-    stm_wtetl_rollback(tx); // TODO
+    stm_wtetl_rollback(tx);
 
     /* Set status to ABORTED */
     SET_STATUS(tx->status, TX_ABORTED);
