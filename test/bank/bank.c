@@ -4,13 +4,14 @@
 #include <alloc.h>
 #include <assert.h>
 #include <barrier.h>
+#include <perfcounter.h>
 
 #include <tiny.h>
 #include <tiny_internal.h>
 #include <defs.h>
 
 #define TRANSFER 2
-#define N_ACCOUNTS 10
+#define N_ACCOUNTS 800
 #define ACCOUNT_V 1000
 
 #define BUFFER_SIZE 100
@@ -83,6 +84,8 @@ BARRIER_INIT(my_barrier, NR_TASKLETS);
 
 unsigned int bank[N_ACCOUNTS];
 
+__host uint32_t nb_cycles;
+
 int main()
 {
     struct stm_tx *tx = NULL;
@@ -92,6 +95,7 @@ int main()
     char buffer[BUFFER_SIZE];
     int idx = 0;
     int t;
+    perfcounter_t initial_time;
 
     s = (uint64_t)me();
     tid = me();
@@ -100,6 +104,12 @@ int main()
     initialize_accounts();
 
     barrier_wait(&my_barrier);
+
+    if (me() == 0)
+    {
+        initial_time = perfcounter_config(COUNT_CYCLES, false);
+    }
+    
 
     // ------------------------------------------------------
 
@@ -111,23 +121,23 @@ int main()
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
         // rc = (RAND_R_FNC(s) % 100) + 1;
 
-        START_DEBUG(tx, tid, buffer, idx);
-        // START(tx, tid);
+        // START_DEBUG(tx, tid, buffer, idx);
+        START(tx, tid);
 
-        a = LOAD_DEBUG(tx, &bank[ra], buffer, idx, ra);
-        // a = LOAD(tx, &bank[ra]);
+        // a = LOAD_DEBUG(tx, &bank[ra], buffer, idx, ra);
+        a = LOAD(tx, &bank[ra]);
         a -= TRANSFER;
-        STORE_DEBUG(tx, &bank[ra], a, buffer, idx, ra);
-        // STORE(tx, &bank[ra], a);
+        // STORE_DEBUG(tx, &bank[ra], a, buffer, idx, ra);
+        STORE(tx, &bank[ra], a);
 
-        b = LOAD_DEBUG(tx, &bank[rb], buffer, idx, rb);
-        // b = LOAD(tx, &bank[rb]);
+        // b = LOAD_DEBUG(tx, &bank[rb], buffer, idx, rb);
+        b = LOAD(tx, &bank[rb]);
         b += TRANSFER;
-        STORE_DEBUG(tx, &bank[rb], b, buffer, idx, rb);
-        // STORE(tx, &bank[rb], b);
+        // STORE_DEBUG(tx, &bank[rb], b, buffer, idx, rb);
+        STORE(tx, &bank[rb], b);
 
-        COMMIT_DEBUG(tx, buffer, idx);
-        // COMMIT(tx);
+        // COMMIT_DEBUG(tx, buffer, idx);
+        COMMIT(tx);
 
         buddy_free(tx);
 
@@ -152,7 +162,12 @@ int main()
 
     barrier_wait(&my_barrier);
 
-    print_accounts();
+    if (me() == 0)
+    {
+        nb_cycles = perfcounter_get() - initial_time;
+    }
+
+    // print_accounts();
     
     return 0;
 }
