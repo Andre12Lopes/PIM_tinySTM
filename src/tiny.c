@@ -22,9 +22,9 @@ void stm_init(void)
     _tinystm.initialized = 1;
 }
 
-void stm_start(stm_tx_t *tx)
+void stm_start(stm_tx_t *tx, int tid)
 {
-    return int_stm_start(tx);
+    return int_stm_start(tx, tid);
 }
 
 stm_word_t stm_load(stm_tx_t *tx, volatile stm_word_t *addr)

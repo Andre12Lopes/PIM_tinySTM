@@ -103,7 +103,7 @@ stm_wtetl_rollback(stm_tx_t *tx)
     w_entry_t *w;
     // stm_word_t t;
 
-    // printf("==> stm_wtetl_rollback(%p[%lu-%lu]) N entries = %u\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, tx->w_set.nb_entries);
+    PRINT_DEBUG("==> stm_wtetl_rollback(%p[%lu-%lu]) N entries = %u\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, tx->w_set.nb_entries);
 
     assert(IS_ACTIVE(tx->status));
 
@@ -150,6 +150,11 @@ stm_wtetl_rollback(stm_tx_t *tx)
 
         // TODO -> change to account for incarnation
         // printf("############################ LOCK = %p\n", w->lock);
+        // for (volatile long i = 0; i < 100; ++i)
+        // {
+        //     /* code */
+        // }
+
         ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(w->version));
         // *(w->lock) = LOCK_SET_TIMESTAMP(w->version);
 
@@ -432,6 +437,11 @@ stm_wtetl_commit(stm_tx_t *tx)
     {
         if (w->next == NULL)
         {
+            // for (volatile long i = 0; i < 1000 * tx->tid; ++i)
+            // {
+            //     /* code */
+            // }
+
             /* No need for CAS (can only be modified by owner transaction) */
             ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(t));
         }

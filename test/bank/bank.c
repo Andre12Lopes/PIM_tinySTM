@@ -10,40 +10,53 @@
 #include <defs.h>
 
 #define TRANSFER 2
-#define N_ACCOUNTS 17
+#define N_ACCOUNTS 10
 #define ACCOUNT_V 1000
 
 #define BUFFER_SIZE 100
 
-#define START(tx, b, idx)           do { stm_start(tx); \
-                                        b[idx] = 'S'; \
-                                        idx = (idx+1) % BUFFER_SIZE
+#define START_DEBUG(tx, tid, b, idx)    do { \
+                                            stm_start(tx, tid); \
+                                            b[idx] = 'S'; \
+                                            idx = (idx+1) % BUFFER_SIZE
 
-#define LOAD(tx, val, b, idx)           /*b[idx] = 'l'; \
-                                        idx = (idx+1) % BUFFER_SIZE;*/ \
-                                        stm_load(tx, val); \
-                                        b[idx] = 'L'; \
-                                        idx = (idx+1) % BUFFER_SIZE; \
-                                        /*b[idx] = (a); \
-                                        idx = (idx+1) % BUFFER_SIZE; */\
-                                        if (tx->status == 4) { b[idx] = 'R'; idx = (idx+1) % BUFFER_SIZE; continue; }
+#define LOAD_DEBUG(tx, val, b, idx, acc)    stm_load(tx, val); \
+                                            b[idx] = 'L'; \
+                                            idx = (idx+1) % BUFFER_SIZE; \
+                                            b[idx] = acc + '0'; \
+                                            idx = (idx+1) % BUFFER_SIZE; \
+                                            if (tx->status == 4) { b[idx] = 'R'; idx = (idx+1) % BUFFER_SIZE; continue; }
 
-#define STORE(tx, val, v, b, idx)       b[idx] = 'w'; \
-                                        idx = (idx+1) % BUFFER_SIZE; \
-                                        stm_store(tx, val, v); \
-                                        b[idx] = 'W'; \
-                                        /*idx = (idx+1) % BUFFER_SIZE; \
-                                        b[idx] = (a); */\
-                                        idx = (idx+1) % BUFFER_SIZE; \
-                                        if (tx->status == 4) { b[idx] = 'R'; idx = (idx+1) % BUFFER_SIZE; continue; }
+#define STORE_DEBUG(tx, val, v, b, idx, acc)     b[idx] = 'w'; \
+                                            idx = (idx+1) % BUFFER_SIZE; \
+                                            stm_store(tx, val, v); \
+                                            b[idx] = 'W'; \
+                                            idx = (idx+1) % BUFFER_SIZE; \
+                                            b[idx] = acc + '0'; \
+                                            idx = (idx+1) % BUFFER_SIZE; \
+                                            if (tx->status == 4) { b[idx] = 'R'; idx = (idx+1) % BUFFER_SIZE; continue; }
 
-#define COMMIT(tx, b, idx)              stm_commit(tx); \
-                                        b[idx] = 'C'; \
-                                        idx = (idx+1) % BUFFER_SIZE; \
-                                        if (tx->status != 4) { break; } \
-                                        b[idx] = 'R'; \
-                                        idx = (idx+1) % BUFFER_SIZE; \
-                                    } while (1)
+#define COMMIT_DEBUG(tx, b, idx)            stm_commit(tx); \
+                                            b[idx] = 'C'; \
+                                            idx = (idx+1) % BUFFER_SIZE; \
+                                            if (tx->status != 4) { break; } \
+                                            b[idx] = 'R'; \
+                                            idx = (idx+1) % BUFFER_SIZE; \
+                                        } while (1)
+
+
+#define START(tx, tid)      do { \
+                                stm_start(tx, tid);
+
+#define LOAD(tx, val)           stm_load(tx, val); \
+                                if (tx->status == 4) { continue; }
+
+#define STORE(tx, val, v)       stm_store(tx, val, v); \
+                                if (tx->status == 4) { continue; }
+
+#define COMMIT(tx)              stm_commit(tx); \
+                                if (tx->status != 4) { break; } \
+                            } while (1)
 
 #define RAND_R_FNC(seed) ({                         \
    uint64_t next = (seed);                          \
@@ -73,11 +86,12 @@ unsigned int bank[N_ACCOUNTS];
 int main()
 {
     struct stm_tx *tx = NULL;
-    int ra, rb, tid;
+    int ra, rb, rc, tid;
     unsigned int a, b;
     uint64_t s;
     char buffer[BUFFER_SIZE];
     int idx = 0;
+    int t;
 
     s = (uint64_t)me();
     tid = me();
@@ -95,47 +109,48 @@ int main()
 
         ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
+        // rc = (RAND_R_FNC(s) % 100) + 1;
 
-        START(tx, buffer, idx);
+        START_DEBUG(tx, tid, buffer, idx);
+        // START(tx, tid);
 
-        a = LOAD(tx, &bank[ra], buffer, idx);
+        a = LOAD_DEBUG(tx, &bank[ra], buffer, idx, ra);
+        // a = LOAD(tx, &bank[ra]);
         a -= TRANSFER;
-        STORE(tx, &bank[ra], a, buffer, idx);
+        STORE_DEBUG(tx, &bank[ra], a, buffer, idx, ra);
+        // STORE(tx, &bank[ra], a);
 
-        b = LOAD(tx, &bank[rb], buffer, idx);
+        b = LOAD_DEBUG(tx, &bank[rb], buffer, idx, rb);
+        // b = LOAD(tx, &bank[rb]);
         b += TRANSFER;
-        STORE(tx, &bank[rb], b, buffer, idx);
+        STORE_DEBUG(tx, &bank[rb], b, buffer, idx, rb);
+        // STORE(tx, &bank[rb], b);
 
-        COMMIT(tx, buffer, idx);
-
-        // printf("A = %u B = %u, TID = %d\n", a, b, s1);
+        COMMIT_DEBUG(tx, buffer, idx);
+        // COMMIT(tx);
 
         buddy_free(tx);
+
+        // if (rc <= 10)
+        // {
+        //     tx = buddy_alloc(sizeof(struct stm_tx));
+        //     START(tx, tid);
+
+        //     t = 0;
+        //     t += LOAD(tx, &bank[0]);
+        //     t += LOAD(tx, &bank[1]);
+
+        //     COMMIT(tx);
+
+        //     buddy_free(tx);
+
+        //     assert(t == (N_ACCOUNTS * ACCOUNT_V));
+        // }
     }
 
     // ------------------------------------------------------
-    // __asm__ __volatile__("" : : : "memory");
-
-    // printf("ENDED %d\n", tid);
 
     barrier_wait(&my_barrier);
-
-    // for (int i = 0; i < 10; ++i)
-    // {
-    //     if (tid == i)
-    //     {
-    //         printf("TID = %d ->", tid);
-    //         for (int i = 0; i < idx; ++i)
-    //         {
-    //             printf("%c, ",buffer[i]);
-    //         }
-    //         printf("\n\n");
-    //     }
-
-    //     barrier_wait(&my_barrier);
-    // }
-
-
 
     print_accounts();
     

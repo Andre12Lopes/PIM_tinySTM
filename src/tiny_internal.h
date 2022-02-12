@@ -112,6 +112,7 @@ typedef struct stm_tx
     w_set_t w_set;              /* Write set */
     unsigned int nesting;       /* Nesting level */
     unsigned int read_only;
+    int tid;
 } stm_tx_t;
 
 
@@ -177,7 +178,7 @@ stm_allocate_rs_entries(stm_tx_t *tx, int extend)
  * Initialize the transaction descriptor before start or restart.
  */
 static inline void 
-int_stm_prepare(stm_tx_t *tx)
+int_stm_prepare(stm_tx_t *tx, int tid)
 {
     /* Read/write set */
     /* tx->w_set.nb_acquired = 0; */
@@ -186,6 +187,8 @@ int_stm_prepare(stm_tx_t *tx)
 
     tx->w_set.size = 2;
     tx->r_set.size = 2;
+
+    tx->tid = tid;
 
     // start:
     /* Start timestamp */
@@ -208,7 +211,7 @@ int_stm_prepare(stm_tx_t *tx)
 }
 
 static inline void
-int_stm_start(stm_tx_t *tx)
+int_stm_start(stm_tx_t *tx, int tid)
 {
     PRINT_DEBUG("==> stm_start(%p)\n", tx);
 
@@ -222,7 +225,7 @@ int_stm_start(stm_tx_t *tx)
     // }
 
     /* Initialize transaction descriptor */
-    int_stm_prepare(tx);
+    int_stm_prepare(tx, tid);
 }
 
 /*

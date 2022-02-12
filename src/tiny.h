@@ -39,7 +39,7 @@ enum
 
 void stm_init(void);
 
-void stm_start(struct stm_tx *tx);
+void stm_start(struct stm_tx *tx, int tid);
 
 /* TODO: Read does not deal well with floating point operations */
 /* TODO: Change return type */
