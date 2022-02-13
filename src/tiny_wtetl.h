@@ -150,10 +150,10 @@ stm_wtetl_rollback(stm_tx_t *tx)
 
         // TODO -> change to account for incarnation
         // printf("############################ LOCK = %p\n", w->lock);
-        // for (volatile long i = 0; i < 100; ++i)
-        // {
-        //     /* code */
-        // }
+        for (volatile long i = 0; i < 100; ++i)
+        {
+            /* code */
+        }
 
         ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(w->version));
         // *(w->lock) = LOCK_SET_TIMESTAMP(w->version);

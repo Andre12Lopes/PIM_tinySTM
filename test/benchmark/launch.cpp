@@ -7,6 +7,8 @@ int main(void)
 {
 	std::vector<std::vector<uint32_t>> nbCycles(1);
 	std::vector<std::vector<uint32_t>> clocksPerSec(1);
+	std::vector<std::vector<uint32_t>> nAborts(1);
+    std::vector<std::vector<uint32_t>> nTransactions(1);
 
     try
     {
@@ -21,7 +23,16 @@ int main(void)
         clocksPerSec.front().resize(1);
     	dpu.copy(clocksPerSec, "CLOCKS_PER_SEC");
 
-        std::cout << (double)nbCycles.front().front() / clocksPerSec.front().front() << " secs." << std::endl;
+    	nAborts.front().resize(1);
+    	dpu.copy(nAborts, "n_aborts");
+
+        nTransactions.front().resize(1);
+        dpu.copy(nTransactions, "n_trans");
+
+        double time = (double) nbCycles.front().front() / clocksPerSec.front().front();
+
+        std::cout << "Tx/s = " << (double)nTransactions.front().front() / time << std::endl;
+        std::cout << "Abort rate = " << ((double) nAborts.front().front() * 100) / nTransactions.front().front() << std::endl;
 
         dpu.log(std::cout);
     }

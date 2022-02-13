@@ -13,6 +13,7 @@
 #define TRANSFER 2
 #define N_ACCOUNTS 800
 #define ACCOUNT_V 1000
+#define N_TRANSACTIONS 1000
 
 #define BUFFER_SIZE 100
 
@@ -49,14 +50,15 @@
 #define START(tx, tid)      do { \
                                 stm_start(tx, tid);
 
-#define LOAD(tx, val)           stm_load(tx, val); \
-                                if (tx->status == 4) { continue; }
+#define LOAD(tx, val, ab)       stm_load(tx, val); \
+                                if (tx->status == 4) { ab++; continue; }
 
-#define STORE(tx, val, v)       stm_store(tx, val, v); \
-                                if (tx->status == 4) { continue; }
+#define STORE(tx, val, v, ab)   stm_store(tx, val, v); \
+                                if (tx->status == 4) { ab++; continue; }
 
-#define COMMIT(tx)              stm_commit(tx); \
+#define COMMIT(tx, ab)          stm_commit(tx); \
                                 if (tx->status != 4) { break; } \
+                                ab++; \
                             } while (1)
 
 #define RAND_R_FNC(seed) ({                         \
@@ -85,6 +87,8 @@ BARRIER_INIT(my_barrier, NR_TASKLETS);
 unsigned int bank[N_ACCOUNTS];
 
 __host uint32_t nb_cycles;
+__host uint32_t n_aborts;
+__host uint32_t n_trans;
 
 int main()
 {
@@ -96,6 +100,7 @@ int main()
     int idx = 0;
     int t;
     perfcounter_t initial_time;
+    uint32_t t_aborts = 0;
 
     s = (uint64_t)me();
     tid = me();
@@ -107,13 +112,14 @@ int main()
 
     if (me() == 0)
     {
+        n_trans = N_TRANSACTIONS * NR_TASKLETS;
         initial_time = perfcounter_config(COUNT_CYCLES, false);
     }
-    
+
 
     // ------------------------------------------------------
 
-    for (int i = 0; i < 5000; ++i)
+    for (int i = 0; i < N_TRANSACTIONS; ++i)
     {
         tx = buddy_alloc(sizeof(struct stm_tx));
 
@@ -125,19 +131,19 @@ int main()
         START(tx, tid);
 
         // a = LOAD_DEBUG(tx, &bank[ra], buffer, idx, ra);
-        a = LOAD(tx, &bank[ra]);
+        a = LOAD(tx, &bank[ra], t_aborts);
         a -= TRANSFER;
         // STORE_DEBUG(tx, &bank[ra], a, buffer, idx, ra);
-        STORE(tx, &bank[ra], a);
+        STORE(tx, &bank[ra], a, t_aborts);
 
         // b = LOAD_DEBUG(tx, &bank[rb], buffer, idx, rb);
-        b = LOAD(tx, &bank[rb]);
+        b = LOAD(tx, &bank[rb], t_aborts);
         b += TRANSFER;
         // STORE_DEBUG(tx, &bank[rb], b, buffer, idx, rb);
-        STORE(tx, &bank[rb], b);
+        STORE(tx, &bank[rb], b, t_aborts);
 
         // COMMIT_DEBUG(tx, buffer, idx);
-        COMMIT(tx);
+        COMMIT(tx, t_aborts);
 
         buddy_free(tx);
 
@@ -165,6 +171,17 @@ int main()
     if (me() == 0)
     {
         nb_cycles = perfcounter_get() - initial_time;
+        n_aborts = 0;
+    }
+
+    for (int i = 0; i < NR_TASKLETS; ++i)
+    {
+        if (me() == i)
+        {
+            n_aborts += t_aborts;
+        }
+
+        barrier_wait(&my_barrier);
     }
 
     // print_accounts();

@@ -8,7 +8,10 @@
 .clang-format
 
 pre.txt
+
 test/bank/bank
 test/bank/diff
 test/bank/file
 test/bank/transaction.history
+
+test/benchmark/launch
