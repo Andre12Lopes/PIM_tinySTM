@@ -206,16 +206,18 @@ void print_accounts()
 {
     if (me() == 0)
     {
-        printf("[");
+        // printf("[");
         unsigned int total = 0;
         for (int i = 0; i < N_ACCOUNTS; ++i)
         {
             printf("%u,", bank[i]);
             total += bank[i];
         }
-        printf("]\n");
+        // printf("]\n");
 
-        printf("TOTAL = %u\n", total);
+        // printf("TOTAL = %u\n", total);
+
+        assert(N_ACCOUNTS * ACCOUNT_V);
     }
 
 }
