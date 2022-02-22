@@ -89,6 +89,7 @@ unsigned int bank[N_ACCOUNTS];
 __host uint32_t nb_cycles;
 __host uint32_t n_aborts;
 __host uint32_t n_trans;
+__host uint32_t n_tasklets;
 
 int main()
 {
@@ -113,6 +114,7 @@ int main()
     if (me() == 0)
     {
         n_trans = N_TRANSACTIONS * NR_TASKLETS;
+        n_tasklets = NR_TASKLETS;
         initial_time = perfcounter_config(COUNT_CYCLES, false);
     }
 
