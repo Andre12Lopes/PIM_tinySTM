@@ -9,6 +9,7 @@
 #include <tiny.h>
 #include <tiny_internal.h>
 #include <defs.h>
+#include <mram.h>
 
 #define TRANSFER 2
 #define N_ACCOUNTS 800
@@ -80,7 +81,7 @@
 })
 
 void initialize_accounts();
-void print_accounts();
+void check_total();
 
 BARRIER_INIT(my_barrier, NR_TASKLETS);
 
@@ -90,6 +91,8 @@ __host uint32_t nb_cycles;
 __host uint32_t n_aborts;
 __host uint32_t n_trans;
 __host uint32_t n_tasklets;
+
+struct stm_tx
 
 int main()
 {
@@ -127,7 +130,7 @@ int main()
 
         ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
-        // rc = (RAND_R_FNC(s) % 100) + 1;
+        rc = (RAND_R_FNC(s) % 100) + 1;
 
         // START_DEBUG(tx, tid, buffer, idx);
         START(tx, tid);
@@ -149,16 +152,16 @@ int main()
 
         buddy_free(tx);
 
-        // if (rc <= 10)
+        // if (rc <= 5)
         // {
         //     tx = buddy_alloc(sizeof(struct stm_tx));
         //     START(tx, tid);
 
         //     t = 0;
-        //     t += LOAD(tx, &bank[0]);
-        //     t += LOAD(tx, &bank[1]);
+        //     t += LOAD(tx, &bank[0], t_aborts);
+        //     t += LOAD(tx, &bank[1], t_aborts);
 
-        //     COMMIT(tx);
+        //     COMMIT(tx, t_aborts);
 
         //     buddy_free(tx);
 
@@ -186,7 +189,7 @@ int main()
         barrier_wait(&my_barrier);
     }
 
-    // print_accounts();
+    check_total();
     
     return 0;
 }
@@ -202,7 +205,7 @@ void initialize_accounts()
     }
 }
 
-void print_accounts()
+void check_total()
 {
     if (me() == 0)
     {
@@ -210,7 +213,7 @@ void print_accounts()
         unsigned int total = 0;
         for (int i = 0; i < N_ACCOUNTS; ++i)
         {
-            printf("%u,", bank[i]);
+            // printf("%u,", bank[i]);
             total += bank[i];
         }
         // printf("]\n");

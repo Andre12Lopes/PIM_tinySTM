@@ -195,7 +195,6 @@ int_stm_prepare(stm_tx_t *tx, int tid)
     tx->start = tx->end = GET_CLOCK; /* OPT: Could be delayed until first read/write */
     if (tx->start == 0)
     {
-        // printf(">>>>>>>>>>>>>>>>>>>>> TX = %p, CLOCK = %u, DIRECT CLOCK = %u\n", tx, GET_CLOCK, _tinystm.gclock);
     }
     // if (tx->start >= VERSION_MAX)
     // {
@@ -238,8 +237,6 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
                 (unsigned long)tx->start, (unsigned long)tx->end);
 
     assert(IS_ACTIVE(tx->status));
-
-    // printf("REASON = %u, TX = %p, TMIE = %lu\n", reason, tx, (unsigned long)tx->start);
 
     stm_wtetl_rollback(tx);
 
