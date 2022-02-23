@@ -7,6 +7,10 @@ struct stm_tx;
 
 typedef uintptr_t stm_word_t;
 
+#ifndef RWS_IN_MRAM
+#define RWS_IN_MRAM
+#endif
+
 enum
 {
     /**
@@ -39,14 +43,14 @@ enum
 
 void stm_init(void);
 
-void stm_start(struct stm_tx *tx, int tid);
+void stm_start(__mram_ptr struct stm_tx *tx, int tid);
 
 /* TODO: Read does not deal well with floating point operations */
 /* TODO: Change return type */
-stm_word_t stm_load(struct stm_tx *tx, volatile stm_word_t *addr);
+stm_word_t stm_load(__mram_ptr struct stm_tx *tx, volatile stm_word_t *addr);
 
-void stm_store(struct stm_tx *tx, volatile stm_word_t *addr, stm_word_t value);
+void stm_store(__mram_ptr struct stm_tx *tx, volatile stm_word_t *addr, stm_word_t value);
 
-int stm_commit(struct stm_tx *tx);
+int stm_commit(__mram_ptr struct stm_tx *tx);
 
 #endif /* _TINY_H_ */

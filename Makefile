@@ -22,6 +22,8 @@ LDFLAGS += -lpthread
 CPPFLAGS += -U_FORTIFY_SOURCE
 CPPFLAGS += -D_REENTRANT
 
+DEFINES += -DRWS_IN_MRAM=__mram_ptr
+
 # Debug/optimization flags (optimized by default)
 ifeq ($(CFG),debug)
 	CFLAGS += -O0 -ggdb3
@@ -44,7 +46,7 @@ CPPFLAGS += -I$(SRCDIR)
 all: $(TMLIB)
 
 %.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -DCOMPILE_FLAGS="$(CPPFLAGS) $(CFLAGS)" -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(DEFINES) $(CFLAGS) -DCOMPILE_FLAGS="$(CPPFLAGS) $(DEFINES) $(CFLAGS)" -c -o $@ $<
 
 # Additional dependencies
 $(SRCDIR)/tiny.o: $(SRCDIR)/tiny.h $(SRCDIR)/tiny_internal.h $(SRCDIR)/tiny_wtetl.h $(SRCDIR)/utils.h $(SRCDIR)/atomic.h

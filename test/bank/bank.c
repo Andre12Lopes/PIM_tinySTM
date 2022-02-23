@@ -52,13 +52,13 @@
                                 stm_start(tx, tid);
 
 #define LOAD(tx, val, ab)       stm_load(tx, val); \
-                                if (tx->status == 4) { ab++; continue; }
+                                if ((tx)->status == 4) { ab++; continue; }
 
 #define STORE(tx, val, v, ab)   stm_store(tx, val, v); \
-                                if (tx->status == 4) { ab++; continue; }
+                                if ((tx)->status == 4) { ab++; continue; }
 
 #define COMMIT(tx, ab)          stm_commit(tx); \
-                                if (tx->status != 4) { break; } \
+                                if ((tx)->status != 4) { break; } \
                                 ab++; \
                             } while (1)
 
@@ -92,7 +92,7 @@ __host uint32_t n_aborts;
 __host uint32_t n_trans;
 __host uint32_t n_tasklets;
 
-struct stm_tx
+struct stm_tx __mram_noinit tx_global[NR_TASKLETS];
 
 int main()
 {
@@ -108,7 +108,7 @@ int main()
 
     s = (uint64_t)me();
     tid = me();
-    buddy_init(4096);
+    // buddy_init(2048);
 
     initialize_accounts();
 
@@ -126,44 +126,44 @@ int main()
 
     for (int i = 0; i < N_TRANSACTIONS; ++i)
     {
-        tx = buddy_alloc(sizeof(struct stm_tx));
+        // tx = buddy_alloc(sizeof(struct stm_tx));
 
         ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
         rc = (RAND_R_FNC(s) % 100) + 1;
 
-        // START_DEBUG(tx, tid, buffer, idx);
-        START(tx, tid);
+        // START_DEBUG(tx_global, tid, buffer, idx);
+        START(&(tx_global[tid]), tid);
 
-        // a = LOAD_DEBUG(tx, &bank[ra], buffer, idx, ra);
-        a = LOAD(tx, &bank[ra], t_aborts);
+        // a = LOAD_DEBUG(&(tx_global[tid]), &bank[ra], buffer, idx, ra);
+        a = LOAD(&(tx_global[tid]), &bank[ra], t_aborts);
         a -= TRANSFER;
-        // STORE_DEBUG(tx, &bank[ra], a, buffer, idx, ra);
-        STORE(tx, &bank[ra], a, t_aborts);
+        // STORE_DEBUG(&(tx_global[tid]), &bank[ra], a, buffer, idx, ra);
+        STORE(&(tx_global[tid]), &bank[ra], a, t_aborts);
 
-        // b = LOAD_DEBUG(tx, &bank[rb], buffer, idx, rb);
-        b = LOAD(tx, &bank[rb], t_aborts);
+        // b = LOAD_DEBUG(&(tx_global[tid]), &bank[rb], buffer, idx, rb);
+        b = LOAD(&(tx_global[tid]), &bank[rb], t_aborts);
         b += TRANSFER;
-        // STORE_DEBUG(tx, &bank[rb], b, buffer, idx, rb);
-        STORE(tx, &bank[rb], b, t_aborts);
+        // STORE_DEBUG(&(tx_global[tid]), &bank[rb], b, buffer, idx, rb);
+        STORE(&(tx_global[tid]), &bank[rb], b, t_aborts);
 
-        // COMMIT_DEBUG(tx, buffer, idx);
-        COMMIT(tx, t_aborts);
+        // COMMIT_DEBUG(&(tx_global[tid]), buffer, idx);
+        COMMIT(&(tx_global[tid]), t_aborts);
 
-        buddy_free(tx);
+        // buddy_free(tx);
 
-        // if (rc <= 5)
+        // if (rc <= 10)
         // {
-        //     tx = buddy_alloc(sizeof(struct stm_tx));
-        //     START(tx, tid);
+        //     // tx = buddy_alloc(sizeof(struct stm_tx));
+        //     START(&(tx_global[tid]), tid);
 
         //     t = 0;
-        //     t += LOAD(tx, &bank[0], t_aborts);
-        //     t += LOAD(tx, &bank[1], t_aborts);
+        //     t += LOAD(&(tx_global[tid]), &bank[0], t_aborts);
+        //     t += LOAD(&(tx_global[tid]), &bank[1], t_aborts);
 
-        //     COMMIT(tx, t_aborts);
+        //     COMMIT(&(tx_global[tid]), t_aborts);
 
-        //     buddy_free(tx);
+        //     // buddy_free(tx);
 
         //     assert(t == (N_ACCOUNTS * ACCOUNT_V));
         // }
@@ -218,9 +218,9 @@ void check_total()
         }
         // printf("]\n");
 
-        // printf("TOTAL = %u\n", total);
+        printf("TOTAL = %u\n", total);
 
-        assert(N_ACCOUNTS * ACCOUNT_V);
+        assert(total = N_ACCOUNTS * ACCOUNT_V);
     }
 
 }

@@ -5,9 +5,9 @@
 #include <stdio.h>
 
 static inline void 
-stm_wtetl_add_to_rs(stm_tx_t *tx, stm_word_t version, volatile stm_word_t *lock)
+stm_wtetl_add_to_rs(RWS_IN_MRAM stm_tx_t *tx, stm_word_t version, volatile stm_word_t *lock)
 {
-    r_entry_t *r;
+    RWS_IN_MRAM r_entry_t *r;
 
     /* No need to add to read set for read-only transaction */
     if (tx->read_only)
@@ -27,9 +27,9 @@ stm_wtetl_add_to_rs(stm_tx_t *tx, stm_word_t version, volatile stm_word_t *lock)
 }
 
 static inline int 
-stm_wtetl_validate(stm_tx_t *tx)
+stm_wtetl_validate(RWS_IN_MRAM stm_tx_t *tx)
 {
-    r_entry_t *r;
+    RWS_IN_MRAM r_entry_t *r;
     int i;
     stm_word_t l;
 
@@ -74,7 +74,7 @@ stm_wtetl_validate(stm_tx_t *tx)
  * Extend snapshot range.
  */
 static inline int 
-stm_wtetl_extend(stm_tx_t *tx)
+stm_wtetl_extend(RWS_IN_MRAM stm_tx_t *tx)
 {
     stm_word_t now;
 
@@ -97,10 +97,10 @@ stm_wtetl_extend(stm_tx_t *tx)
 }
 
 static inline void 
-stm_wtetl_rollback(stm_tx_t *tx)
+stm_wtetl_rollback(RWS_IN_MRAM stm_tx_t *tx)
 {
     int i;
-    w_entry_t *w;
+    RWS_IN_MRAM w_entry_t *w;
     // stm_word_t t;
 
     PRINT_DEBUG("==> stm_wtetl_rollback(%p[%lu-%lu]) N entries = %u\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, tx->w_set.nb_entries);
@@ -158,7 +158,7 @@ stm_wtetl_rollback(stm_tx_t *tx)
 }
 
 static inline stm_word_t 
-stm_wtetl_read(stm_tx_t *tx, volatile stm_word_t *addr)
+stm_wtetl_read(RWS_IN_MRAM stm_tx_t *tx, volatile stm_word_t *addr)
 {
     volatile stm_word_t *lock_addr;
     stm_word_t l1, l2, value, version;
@@ -225,13 +225,13 @@ restart_no_load:
     }
 }
 
-static inline w_entry_t *
-stm_wtetl_write(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
+static inline RWS_IN_MRAM w_entry_t *
+stm_wtetl_write(RWS_IN_MRAM stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
     volatile stm_word_t *lock;
     stm_word_t l, l1, version;
-    w_entry_t *w;
-    w_entry_t *prev = NULL;
+    RWS_IN_MRAM w_entry_t *w;
+    RWS_IN_MRAM w_entry_t *prev = NULL;
 
     PRINT_DEBUG("==> stm_wt_write(t=%p[%lu-%lu],a=%p,d=%p-%lu,m=0x%lx)\n", tx, (unsigned long)tx->start,
                 (unsigned long)tx->end, addr, (void *)value, (unsigned long)value, (unsigned long)mask);
@@ -249,7 +249,7 @@ restart:
     {
         /* Locked */
         /* Do we own the lock? */
-        w = (w_entry_t *)LOCK_GET_ADDR(l);
+        w = (RWS_IN_MRAM w_entry_t *)LOCK_GET_ADDR(l);
         /* Simply check if address falls inside our write set (avoids
          * non-faulting load) */
         if (tx->w_set.entries <= w && w < tx->w_set.entries + tx->w_set.nb_entries)
@@ -393,9 +393,9 @@ do_write:
 }
 
 static inline int
-stm_wtetl_commit(stm_tx_t *tx)
+stm_wtetl_commit(RWS_IN_MRAM stm_tx_t *tx)
 {
-    w_entry_t *w;
+    RWS_IN_MRAM w_entry_t *w;
     stm_word_t t;
     int i;
 
