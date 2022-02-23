@@ -54,6 +54,9 @@
 #define LOAD(tx, val, ab)       stm_load(tx, val); \
                                 if ((tx)->status == 4) { ab++; continue; }
 
+#define LOAD_RO(tx, val, ab)    stm_load(tx, val); \
+                                if ((tx)->status == 4) { ab++; break; }
+
 #define STORE(tx, val, v, ab)   stm_store(tx, val, v); \
                                 if ((tx)->status == 4) { ab++; continue; }
 
@@ -152,21 +155,28 @@ int main()
 
         // buddy_free(tx);
 
-        // if (rc <= 10)
-        // {
-        //     // tx = buddy_alloc(sizeof(struct stm_tx));
-        //     START(&(tx_global[tid]), tid);
+        if (rc <= 5)
+        {
+            // tx = buddy_alloc(sizeof(struct stm_tx));
+            START(&(tx_global[tid]), tid);
 
-        //     t = 0;
-        //     t += LOAD(&(tx_global[tid]), &bank[0], t_aborts);
-        //     t += LOAD(&(tx_global[tid]), &bank[1], t_aborts);
+            t = 0;
+            for (int i = 0; i < N_ACCOUNTS; ++i)
+            {
+                t += LOAD_RO(&(tx_global[tid]), &bank[i], t_aborts);
+            }
 
-        //     COMMIT(&(tx_global[tid]), t_aborts);
+            if (tx_global[tid].status == 4)
+            {
+                continue;
+            }
 
-        //     // buddy_free(tx);
+            COMMIT(&(tx_global[tid]), t_aborts);
 
-        //     assert(t == (N_ACCOUNTS * ACCOUNT_V));
-        // }
+            // buddy_free(tx);
+
+            assert(t == (N_ACCOUNTS * ACCOUNT_V));
+        }
     }
 
     // ------------------------------------------------------
