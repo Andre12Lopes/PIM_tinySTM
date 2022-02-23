@@ -69,7 +69,7 @@ typedef struct r_entry
 typedef struct r_set
 {                            /* Read set */
     // r_entry_t *entries;   /* Array of entries */
-    r_entry_t entries[2];    /* Array of entries */
+    r_entry_t entries[800];    /* Array of entries */
     unsigned int nb_entries; /* Number of entries */
     unsigned int size;       /* Size of array */
 } r_set_t;
@@ -186,7 +186,7 @@ int_stm_prepare(RWS_IN_MRAM stm_tx_t *tx, int tid)
     tx->r_set.nb_entries = 0;
 
     tx->w_set.size = 2;
-    tx->r_set.size = 2;
+    tx->r_set.size = 800;
 
     tx->tid = tid;
 

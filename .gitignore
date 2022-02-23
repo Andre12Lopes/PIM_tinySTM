@@ -15,3 +15,6 @@ test/bank/file
 test/bank/transaction.history
 
 test/benchmark/launch
+
+plot_*
+results*
