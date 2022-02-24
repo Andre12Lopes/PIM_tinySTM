@@ -8,7 +8,8 @@ for (( i = 1; i < 11; i++ )); do
 	make clean
 	make NR_TASKLETS=$i
 	cd ../benchmark
-	for (( i = 0; i < 30; i++ )); do
+	
+	for (( j = 0; j < 30; j++ )); do
 		./launch >> results.txt
 	done
 done
