@@ -3,4 +3,5 @@ set output "plot.pdf"
 set xlabel "Thread Number" 
 set ylabel "Throughput (Tx/s)"
 set yrange [0:*]
-plot "results.txt" u 1:($2/$3) notitle with linespoints
+
+plot "test_data_processed" using 1:($2/$3):4 title 'WRAM' with yerrorlines

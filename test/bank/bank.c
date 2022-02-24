@@ -92,8 +92,6 @@ __host uint32_t n_aborts;
 __host uint32_t n_trans;
 __host uint32_t n_tasklets;
 
-struct stm_tx
-
 int main()
 {
     struct stm_tx *tx = NULL;
