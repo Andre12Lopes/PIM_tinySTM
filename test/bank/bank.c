@@ -155,28 +155,28 @@ int main()
 
         // buddy_free(tx);
 
-        if (rc <= 5)
-        {
-            // tx = buddy_alloc(sizeof(struct stm_tx));
-            START(&(tx_global[tid]), tid);
+        // if (rc <= 5)
+        // {
+        //     // tx = buddy_alloc(sizeof(struct stm_tx));
+        //     START(&(tx_global[tid]), tid);
 
-            t = 0;
-            for (int i = 0; i < N_ACCOUNTS; ++i)
-            {
-                t += LOAD_RO(&(tx_global[tid]), &bank[i], t_aborts);
-            }
+        //     t = 0;
+        //     for (int i = 0; i < N_ACCOUNTS; ++i)
+        //     {
+        //         t += LOAD_RO(&(tx_global[tid]), &bank[i], t_aborts);
+        //     }
 
-            if (tx_global[tid].status == 4)
-            {
-                continue;
-            }
+        //     if (tx_global[tid].status == 4)
+        //     {
+        //         continue;
+        //     }
 
-            COMMIT(&(tx_global[tid]), t_aborts);
+        //     COMMIT(&(tx_global[tid]), t_aborts);
 
-            // buddy_free(tx);
+        //     // buddy_free(tx);
 
-            assert(t == (N_ACCOUNTS * ACCOUNT_V));
-        }
+        //     assert(t == (N_ACCOUNTS * ACCOUNT_V));
+        // }
     }
 
     // ------------------------------------------------------
