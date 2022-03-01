@@ -3,6 +3,12 @@
 
 #include <stdint.h>
 
+#ifdef TX_IN_MRAM
+    #define TYPE __mram_ptr
+#else
+    #define TYPE
+#endif
+
 struct stm_tx;
 
 typedef uintptr_t stm_word_t;
@@ -39,14 +45,14 @@ enum
 
 void stm_init(void);
 
-void stm_start(struct stm_tx *tx, int tid);
+void stm_start(TYPE struct stm_tx *tx);
 
 /* TODO: Read does not deal well with floating point operations */
 /* TODO: Change return type */
-stm_word_t stm_load(struct stm_tx *tx, volatile stm_word_t *addr);
+stm_word_t stm_load(TYPE struct stm_tx *tx, volatile stm_word_t *addr);
 
-void stm_store(struct stm_tx *tx, volatile stm_word_t *addr, stm_word_t value);
+void stm_store(TYPE struct stm_tx *tx, volatile stm_word_t *addr, stm_word_t value);
 
-int stm_commit(struct stm_tx *tx);
+int stm_commit(TYPE struct stm_tx *tx);
 
 #endif /* _TINY_H_ */

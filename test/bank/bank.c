@@ -11,90 +11,32 @@
 #include <defs.h>
 #include <mram.h>
 
+#include "macros.h"
+
 #define TRANSFER 2
 #define N_ACCOUNTS 800
 #define ACCOUNT_V 1000
 #define N_TRANSACTIONS 1000
 
-#define BUFFER_SIZE 100
-
-#define START_DEBUG(tx, tid, b, idx)    do { \
-                                            stm_start(tx, tid); \
-                                            b[idx] = 'S'; \
-                                            idx = (idx+1) % BUFFER_SIZE
-
-#define LOAD_DEBUG(tx, val, b, idx, acc)    stm_load(tx, val); \
-                                            b[idx] = 'L'; \
-                                            idx = (idx+1) % BUFFER_SIZE; \
-                                            b[idx] = acc + '0'; \
-                                            idx = (idx+1) % BUFFER_SIZE; \
-                                            if (tx->status == 4) { b[idx] = 'R'; idx = (idx+1) % BUFFER_SIZE; continue; }
-
-#define STORE_DEBUG(tx, val, v, b, idx, acc)     b[idx] = 'w'; \
-                                            idx = (idx+1) % BUFFER_SIZE; \
-                                            stm_store(tx, val, v); \
-                                            b[idx] = 'W'; \
-                                            idx = (idx+1) % BUFFER_SIZE; \
-                                            b[idx] = acc + '0'; \
-                                            idx = (idx+1) % BUFFER_SIZE; \
-                                            if (tx->status == 4) { b[idx] = 'R'; idx = (idx+1) % BUFFER_SIZE; continue; }
-
-#define COMMIT_DEBUG(tx, b, idx)            stm_commit(tx); \
-                                            b[idx] = 'C'; \
-                                            idx = (idx+1) % BUFFER_SIZE; \
-                                            if (tx->status != 4) { break; } \
-                                            b[idx] = 'R'; \
-                                            idx = (idx+1) % BUFFER_SIZE; \
-                                        } while (1)
-
-
-#define START(tx, tid)      do { \
-                                stm_start(tx, tid);
-
-#define LOAD(tx, val, ab)       stm_load(tx, val); \
-                                if (tx->status == 4) { ab++; continue; }
-
-#define STORE(tx, val, v, ab)   stm_store(tx, val, v); \
-                                if (tx->status == 4) { ab++; continue; }
-
-#define COMMIT(tx, ab)          stm_commit(tx); \
-                                if (tx->status != 4) { break; } \
-                                ab++; \
-                            } while (1)
-
-#define RAND_R_FNC(seed) ({                         \
-   uint64_t next = (seed);                          \
-   uint64_t result;                                 \
-   next *= 1103515245;                              \
-   next += 12345;                                   \
-   result = (uint64_t) (next >> 16) & (2048-1);     \
-   next *= 1103515245;                              \
-   next += 12345;                                   \
-   result <<= 10;                                   \
-   result ^= (uint64_t) (next >> 16) & (1024-1);    \
-   next *= 1103515245;                              \
-   next += 12345;                                   \
-   result <<= 10;                                   \
-   result ^= (uint64_t) (next >> 16) & (1024-1);    \
-   (seed) = next;                                   \
-   result; /* returns result */                     \
-})
-
-void initialize_accounts();
-void check_total();
-
 BARRIER_INIT(my_barrier, NR_TASKLETS);
-
-unsigned int bank[N_ACCOUNTS];
 
 __host uint32_t nb_cycles;
 __host uint32_t n_aborts;
 __host uint32_t n_trans;
 __host uint32_t n_tasklets;
 
+unsigned int bank[N_ACCOUNTS];
+
+void initialize_accounts();
+void check_total();
+
+#ifdef TX_IN_MRAM
+struct stm_tx __mram_noinit tx_mram[NR_TASKLETS];
+#endif
+
 int main()
 {
-    struct stm_tx *tx = NULL;
+    struct stm_tx tx;
     int ra, rb, rc, tid;
     unsigned int a, b;
     uint64_t s;
@@ -106,7 +48,7 @@ int main()
 
     s = (uint64_t)me();
     tid = me();
-    buddy_init(4096);
+    // buddy_init(4096);
 
     initialize_accounts();
 
@@ -116,6 +58,8 @@ int main()
     {
         n_trans = N_TRANSACTIONS * NR_TASKLETS;
         n_tasklets = NR_TASKLETS;
+        n_aborts = 0;
+
         initial_time = perfcounter_config(COUNT_CYCLES, false);
     }
 
@@ -124,47 +68,60 @@ int main()
 
     for (int i = 0; i < N_TRANSACTIONS; ++i)
     {
-        tx = buddy_alloc(sizeof(struct stm_tx));
-
         ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
         rc = (RAND_R_FNC(s) % 100) + 1;
 
-        // START_DEBUG(tx, tid, buffer, idx);
-        START(tx, tid);
+        
+#ifdef TX_IN_MRAM
+        START(&(tx_mram[tid]));
 
-        // a = LOAD_DEBUG(tx, &bank[ra], buffer, idx, ra);
-        a = LOAD(tx, &bank[ra], t_aborts);
+        a = LOAD(&(tx_mram[tid]), &bank[ra], t_aborts);
         a -= TRANSFER;
-        // STORE_DEBUG(tx, &bank[ra], a, buffer, idx, ra);
-        STORE(tx, &bank[ra], a, t_aborts);
+        STORE(&(tx_mram[tid]), &bank[ra], a, t_aborts);
 
-        // b = LOAD_DEBUG(tx, &bank[rb], buffer, idx, rb);
-        b = LOAD(tx, &bank[rb], t_aborts);
+        b = LOAD(&(tx_mram[tid]), &bank[rb], t_aborts);
         b += TRANSFER;
-        // STORE_DEBUG(tx, &bank[rb], b, buffer, idx, rb);
-        STORE(tx, &bank[rb], b, t_aborts);
+        STORE(&(tx_mram[tid]), &bank[rb], b, t_aborts);
 
-        // COMMIT_DEBUG(tx, buffer, idx);
-        COMMIT(tx, t_aborts);
+        COMMIT(&(tx_mram[tid]), t_aborts);
+#else
+        START(&tx);
 
-        buddy_free(tx);
+        a = LOAD(&tx, &bank[ra], t_aborts);
+        a -= TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
 
-        // if (rc <= 5)
-        // {
-        //     tx = buddy_alloc(sizeof(struct stm_tx));
-        //     START(tx, tid);
+        b = LOAD(&tx, &bank[rb], t_aborts);
+        b += TRANSFER;
+        STORE(&tx, &bank[rb], b, t_aborts);
 
-        //     t = 0;
-        //     t += LOAD(tx, &bank[0], t_aborts);
-        //     t += LOAD(tx, &bank[1], t_aborts);
+        COMMIT(&tx, t_aborts);
+#endif
 
-        //     COMMIT(tx, t_aborts);
+        // START_DEBUG(&tx, tid, buffer, idx);
+        // a = LOAD_DEBUG(&tx, &bank[ra], buffer, idx, ra);
+        // a -= TRANSFER;
+        // STORE_DEBUG(&tx, &bank[ra], a, buffer, idx, ra);
+        // b = LOAD_DEBUG(&tx, &bank[rb], buffer, idx, rb);
+        // b += TRANSFER;
+        // STORE_DEBUG(&tx, &bank[rb], b, buffer, idx, rb);
+        // COMMIT_DEBUG(&tx, buffer, idx);
 
-        //     buddy_free(tx);
+#ifdef RO_TX
+        if (rc <= 5)
+        {
+            START(tx, tid);
 
-        //     assert(t == (N_ACCOUNTS * ACCOUNT_V));
-        // }
+            t = 0;
+            t += LOAD(tx, &bank[0], t_aborts);
+            t += LOAD(tx, &bank[1], t_aborts);
+
+            COMMIT(tx, t_aborts);
+
+            assert(t == (N_ACCOUNTS * ACCOUNT_V));
+        }
+#endif 
     }
 
     // ------------------------------------------------------
@@ -174,7 +131,6 @@ int main()
     if (me() == 0)
     {
         nb_cycles = perfcounter_get() - initial_time;
-        n_aborts = 0;
     }
 
     for (int i = 0; i < NR_TASKLETS; ++i)
@@ -216,7 +172,7 @@ void check_total()
         }
         // printf("]\n");
 
-        // printf("TOTAL = %u\n", total);
+        printf("TOTAL = %u\n", total);
 
         assert(N_ACCOUNTS * ACCOUNT_V);
     }

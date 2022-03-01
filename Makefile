@@ -34,17 +34,19 @@ else
 endif
 
 # Enable all warnings but unsused functions and labels
-CFLAGS += -Wall
-CFLAGS += -Werror -Wno-unused-label -Wno-unused-function
+CFLAGS += -Wall -Wextra -Wno-unused-label -Wno-unused-function
 
 CPPFLAGS += -I$(SRCDIR)
 
-.PHONY:	all clean
+DEFINES += -DTX_IN_MRAM
+DEFINES += -DOR_IN_MRAM
+
+.PHONY:	all test clean
 
 all: $(TMLIB)
 
 %.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -DCOMPILE_FLAGS="$(CPPFLAGS) $(CFLAGS)" -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 # Additional dependencies
 $(SRCDIR)/tiny.o: $(SRCDIR)/tiny.h $(SRCDIR)/tiny_internal.h $(SRCDIR)/tiny_wtetl.h $(SRCDIR)/utils.h $(SRCDIR)/atomic.h
@@ -53,8 +55,12 @@ $(SRCDIR)/tiny.o: $(SRCDIR)/tiny.h $(SRCDIR)/tiny_internal.h $(SRCDIR)/tiny_wtet
 $(TMLIB): $(SRCDIR)/$(TM).o
 	$(AR) crus $@ $^
 
+test: $(TMLIB)
+	$(MAKE) -C test
+
 clean:
 	rm -f $(TMLIB) $(SRCDIR)/*.o
+	TARGET=clean $(MAKE) -C test
 
 
 # gcc -I/home/andre/Documents/PIM_tinySTM/src -o prog main.c -L/home/andre/Documents/PIM_tinySTM/lib/ -l tiny

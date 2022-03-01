@@ -22,22 +22,22 @@ void stm_init(void)
     _tinystm.initialized = 1;
 }
 
-void stm_start(stm_tx_t *tx, int tid)
+void stm_start(TYPE stm_tx_t *tx)
 {
-    return int_stm_start(tx, tid);
+    return int_stm_start(tx);
 }
 
-stm_word_t stm_load(stm_tx_t *tx, volatile stm_word_t *addr)
+stm_word_t stm_load(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
     return int_stm_load(tx, addr);
 }
 
-void stm_store(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value)
+void stm_store(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value)
 {
     int_stm_store(tx, addr, value);
 }
 
-int stm_commit(stm_tx_t *tx)
+int stm_commit(TYPE stm_tx_t *tx)
 {
     return int_stm_commit(tx);
 }

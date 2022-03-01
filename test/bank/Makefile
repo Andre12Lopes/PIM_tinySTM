@@ -10,21 +10,26 @@ LIBDIR = $(ROOT)/lib
 TMLIB = $(LIBDIR)/lib$(TM).a
 TARGET = bank
 
-CFLAGS += -Wall
-CFLAGS += -Wno-unused-label -Wno-unused-function -std=c11
+CFLAGS += -Wall -Wno-unused-label -Wno-unused-function -std=c11
 
 LDFLAGS += -L$(LIBDIR) -l$(TM)
 CPPFLAGS += -I$(SRCDIR)
+
+DEFINES += -DTX_IN_MRAM
+DEFINES += -DOR_IN_MRAM
+DEFINES += -DRO_TX
 
 .PHONY:	all clean
 
 all: $(TARGET)
 
 %.o: %.c
-	$(CC) -DNR_TASKLETS=$(NR_TASKLETS) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) -DNR_TASKLETS=$(NR_TASKLETS) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
-$(TARGET): %: %.o $(TMLIB)
+bank.o: macros.h
+
+$(TARGET): $(TARGET).o $(TMLIB)
 	$(CC) -o $@ $< -DNR_TASKLETS=$(NR_TASKLETS) $(LDFLAGS)
 
 clean:
-	rm -f $(TARGET) *.o
+	rm -f $(TARGET) *.o *.s

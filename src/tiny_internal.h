@@ -84,7 +84,7 @@ typedef struct w_entry
             stm_word_t mask;           /* Write mask */
             stm_word_t version;        /* Version overwritten */
             volatile stm_word_t *lock; /* Pointer to lock (for fast access) */
-            struct w_entry *next;      /* WRITE_BACK_ETL || WRITE_THROUGH: Next address
+            TYPE struct w_entry *next;      /* WRITE_BACK_ETL || WRITE_THROUGH: Next address
                                           covered by same lock (if any) */
         };
         char padding[CACHELINE_SIZE]; /* Padding (multiple of a cache line) */
@@ -112,7 +112,6 @@ typedef struct stm_tx
     w_set_t w_set;              /* Write set */
     unsigned int nesting;       /* Nesting level */
     unsigned int read_only;
-    int tid;
 } stm_tx_t;
 
 
@@ -125,15 +124,15 @@ typedef struct
 
 extern global_t _tinystm;
 
-static void stm_rollback(stm_tx_t *tx, unsigned int reason);
+static void stm_rollback(TYPE stm_tx_t *tx, unsigned int reason);
 
 /*
  * Check if stripe has been read previously.
  */
-static inline r_entry_t *
-stm_has_read(stm_tx_t *tx, volatile stm_word_t *lock)
+static inline TYPE r_entry_t *
+stm_has_read(TYPE stm_tx_t *tx, volatile stm_word_t *lock)
 {
-    r_entry_t *r;
+    TYPE r_entry_t *r;
     int i;
 
     PRINT_DEBUG("==> stm_has_read(%p[%lu-%lu],%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, lock);
@@ -152,7 +151,7 @@ stm_has_read(stm_tx_t *tx, volatile stm_word_t *lock)
 
 // TODO change alocation to DPU
 static void 
-stm_allocate_rs_entries(stm_tx_t *tx, int extend)
+stm_allocate_rs_entries(TYPE stm_tx_t *tx, int extend)
 {
     PRINT_DEBUG("==> stm_allocate_rs_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end,
                 extend);
@@ -178,7 +177,7 @@ stm_allocate_rs_entries(stm_tx_t *tx, int extend)
  * Initialize the transaction descriptor before start or restart.
  */
 static inline void 
-int_stm_prepare(stm_tx_t *tx, int tid)
+int_stm_prepare(TYPE stm_tx_t *tx)
 {
     /* Read/write set */
     /* tx->w_set.nb_acquired = 0; */
@@ -187,8 +186,6 @@ int_stm_prepare(stm_tx_t *tx, int tid)
 
     tx->w_set.size = 2;
     tx->r_set.size = 2;
-
-    tx->tid = tid;
 
     // start:
     /* Start timestamp */
@@ -210,7 +207,7 @@ int_stm_prepare(stm_tx_t *tx, int tid)
 }
 
 static inline void
-int_stm_start(stm_tx_t *tx, int tid)
+int_stm_start(TYPE stm_tx_t *tx)
 {
     PRINT_DEBUG("==> stm_start(%p)\n", tx);
 
@@ -224,14 +221,14 @@ int_stm_start(stm_tx_t *tx, int tid)
     // }
 
     /* Initialize transaction descriptor */
-    int_stm_prepare(tx, tid);
+    int_stm_prepare(tx);
 }
 
 /*
  * Rollback transaction.
  */
 static void 
-stm_rollback(stm_tx_t *tx, unsigned int reason)
+stm_rollback(TYPE stm_tx_t *tx, unsigned int reason)
 {
     PRINT_DEBUG("==> stm_rollback(%p[%lu-%lu])\n", tx, 
                 (unsigned long)tx->start, (unsigned long)tx->end);
@@ -257,19 +254,19 @@ stm_rollback(stm_tx_t *tx, unsigned int reason)
 }
 
 static inline stm_word_t 
-int_stm_load(stm_tx_t *tx, volatile stm_word_t *addr)
+int_stm_load(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
     return stm_wtetl_read(tx, addr);
 }
 
 static inline void 
-int_stm_store(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value)
+int_stm_store(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value)
 {
     stm_wtetl_write(tx, addr, value, ~(stm_word_t)0);
 }
 
 static inline int
-int_stm_commit(stm_tx_t *tx)
+int_stm_commit(TYPE stm_tx_t *tx)
 {
     PRINT_DEBUG("==> stm_commit(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
 
