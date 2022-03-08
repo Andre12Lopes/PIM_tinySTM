@@ -70,7 +70,10 @@ int main()
     {
         ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
+#if defined(RO_TX) && defined(TX_IN_MRAM)
         rc = (RAND_R_FNC(s) % 100) + 1;
+#endif
+
       
 #ifdef TX_IN_MRAM
         START(&(tx_mram[tid]));
@@ -171,7 +174,6 @@ void check_total()
 
         printf("TOTAL = %u\n", total);
 
-        assert(total = N_ACCOUNTS * ACCOUNT_V);
+        assert(total == (N_ACCOUNTS * ACCOUNT_V));
     }
-
 }

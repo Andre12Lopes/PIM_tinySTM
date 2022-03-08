@@ -309,7 +309,7 @@ restart_no_load:
     /* Not locked */
     /* Handle write after reads (before CAS) */
     version = LOCK_GET_TIMESTAMP(l);
-
+    ATOMIC_B_WRITE;
 acquire:
     if (version > tx->end)
     {
@@ -393,7 +393,7 @@ stm_wbetl_commit(stm_tx_t *tx)
 
     /* Update transaction */
     /* Get commit timestamp (may exceed VERSION_MAX by up to MAX_THREADS) */
-    t = FETCH_INC_CLOCK + 1;
+    t = FETCH_INC_CLOCK;
 
     /* Try to validate (only if a concurrent transaction has committed since tx->start) */
     if (tx->start != t - 1 && !stm_wbetl_validate(tx))

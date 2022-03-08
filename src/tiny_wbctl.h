@@ -348,7 +348,7 @@ stm_wbctl_commit(stm_tx_t *tx)
     } while (w > tx->w_set.entries);
 
     /* Get commit timestamp (may exceed VERSION_MAX by up to MAX_THREADS) */
-    t = FETCH_INC_CLOCK + 1;
+    t = FETCH_INC_CLOCK;
 
     /* Try to validate (only if a concurrent transaction has committed since tx->start) */
     if (tx->start != t - 1 && !stm_wbctl_validate(tx))
