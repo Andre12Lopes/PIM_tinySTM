@@ -171,7 +171,7 @@ void check_total()
 
         printf("TOTAL = %u\n", total);
 
-        assert(N_ACCOUNTS * ACCOUNT_V);
+        assert(total = N_ACCOUNTS * ACCOUNT_V);
     }
 
 }
