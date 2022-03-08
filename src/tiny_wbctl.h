@@ -1,6 +1,7 @@
 #ifndef _TINY_WBCTL_H_
 #define _TINY_WBCTL_H_
 
+#include "atomic.h"
 static inline int 
 stm_wbctl_validate(stm_tx_t *tx)
 {
@@ -309,7 +310,7 @@ stm_wbctl_commit(stm_tx_t *tx)
         w--;
         /* Try to acquire lock */
     restart:
-        l = ATOMIC_LOAD(w->lock);
+        l = ATOMIC_LOAD_ACQ(w->lock);
         if (LOCK_GET_OWNED(l))
         {
             /* Do we already own the lock? */
@@ -347,6 +348,8 @@ stm_wbctl_commit(stm_tx_t *tx)
         tx->w_set.nb_acquired++;
     } while (w > tx->w_set.entries);
 
+    ATOMIC_B_WRITE
+
     /* Get commit timestamp (may exceed VERSION_MAX by up to MAX_THREADS) */
     t = FETCH_INC_CLOCK;
 
@@ -377,6 +380,8 @@ stm_wbctl_commit(stm_tx_t *tx)
         	ATOMIC_STORE_REL(w->lock, LOCK_SET_TIMESTAMP(t));
     	}
     }
+
+    ATOMIC_B_WRITE
 
 end:
     return 1;
