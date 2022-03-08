@@ -4,9 +4,15 @@
 #include <stdint.h>
 
 #ifdef TX_IN_MRAM
-    #define TYPE __mram_ptr
+#define TYPE __mram_ptr
 #else
-    #define TYPE
+#define TYPE
+#endif
+
+#ifdef OR_IN_MRAM
+#define TYPE_OR __mram_ptr
+#else
+#define TYPE_OR
 #endif
 
 struct stm_tx;

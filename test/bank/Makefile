@@ -1,7 +1,7 @@
 ROOT = ../..
 
 CC = dpu-upmem-dpurte-clang
-NR_TASKLETS = 10
+NR_TASKLETS = 2
 
 TM = tiny
 SRCDIR = $(ROOT)/src
@@ -15,9 +15,9 @@ CFLAGS += -Wall -Wno-unused-label -Wno-unused-function -std=c11
 LDFLAGS += -L$(LIBDIR) -l$(TM)
 CPPFLAGS += -I$(SRCDIR)
 
-DEFINES += -DTX_IN_MRAM
-DEFINES += -DOR_IN_MRAM
-DEFINES += -DRO_TX
+# DEFINES += -DTX_IN_MRAM
+# DEFINES += -DOR_IN_MRAM
+# DEFINES += -DRO_TX
 
 .PHONY:	all clean
 

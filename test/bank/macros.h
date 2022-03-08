@@ -26,7 +26,7 @@
 #define STORE_DEBUG(tx, val, v, b, idx, acc)                                                                           \
 	    b[idx] = 'w';                                                                                                  \
 	    idx = (idx + 1) % BUFFER_SIZE;                                                                                 \
-	    stm_store(tx, val, v);                                                                                       \
+	    stm_store(tx, val, v);                                                                                         \
 	    b[idx] = 'W';                                                                                                  \
 	    idx = (idx + 1) % BUFFER_SIZE;                                                                                 \
 	    b[idx] = acc + '0';                                                                                            \
@@ -39,7 +39,7 @@
 	    }
 
 #define COMMIT_DEBUG(tx, b, idx)                                                                                       \
-	    stm_commit(tx);                                                                                              \
+	    stm_commit(tx);                                                                                                \
 	    b[idx] = 'C';                                                                                                  \
 	    idx = (idx + 1) % BUFFER_SIZE;                                                                                 \
 	    if ((tx)->status != 4)                                                                                         \
@@ -56,16 +56,25 @@
     {                                                                                                                  \
         stm_start(tx);
 
-#define LOAD(tx, val, ab)                                                                                              \
-	    stm_load(tx, val);                                                                                           \
+#define LOAD(tx, val, ab, tid)                                                                                         \
+	    stm_load(tx, val);                                                                                             \
 	    if ((tx)->status == 4)                                                                                         \
 	    {                                                                                                              \
 	        ab++;                                                                                                      \
+	        /*for (volatile long i = 0; i < 1000 * tid; ++i) {}*/                                                          \
 	        continue;                                                                                                  \
 	    }
 
+#define LOAD_RO(tx, val, ab)                                                                                           \
+	    stm_load(tx, val);                                                                                             \
+	    if ((tx)->status == 4)                                                                                         \
+	    {                                                                                                              \
+	        ab++;                                                                                                      \
+	        break;                                                                                                     \
+	    }
+
 #define STORE(tx, val, v, ab)                                                                                          \
-	    stm_store(tx, val, v);                                                                                       \
+	    stm_store(tx, val, v);                                                                                         \
 	    if ((tx)->status == 4)                                                                                         \
 	    {                                                                                                              \
 	        ab++;                                                                                                      \
@@ -73,7 +82,7 @@
 	    }
 
 #define COMMIT(tx, ab)                                                                                                 \
-	    stm_commit(tx);                                                                                              \
+	    stm_commit(tx);                                                                                                \
 	    if ((tx)->status != 4)                                                                                         \
 	    {                                                                                                              \
 	        break;                                                                                                     \

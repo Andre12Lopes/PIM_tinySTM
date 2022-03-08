@@ -5,9 +5,14 @@
 #include "tiny.h"
 #include "tiny_internal.h"
 
+#ifdef OR_IN_MRAM
+global_t __mram_noinit _tinystm;
+#else
 global_t _tinystm;
+#endif
 
-void stm_init(void)
+void 
+stm_init(void)
 {
     printf("Initialized STM\n");
 
@@ -22,22 +27,26 @@ void stm_init(void)
     _tinystm.initialized = 1;
 }
 
-void stm_start(TYPE stm_tx_t *tx)
+void 
+stm_start(TYPE stm_tx_t *tx)
 {
     return int_stm_start(tx);
 }
 
-stm_word_t stm_load(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
+stm_word_t 
+stm_load(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
     return int_stm_load(tx, addr);
 }
 
-void stm_store(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value)
+void 
+stm_store(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value)
 {
     int_stm_store(tx, addr, value);
 }
 
-int stm_commit(TYPE stm_tx_t *tx)
+int 
+stm_commit(TYPE stm_tx_t *tx)
 {
     return int_stm_commit(tx);
 }

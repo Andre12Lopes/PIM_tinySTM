@@ -63,7 +63,7 @@ enum
 typedef struct r_entry
 {                              /* Read set entry */
     stm_word_t version;        /* Version read */
-    volatile stm_word_t *lock; /* Pointer to lock (for fast access) */
+    volatile TYPE_OR stm_word_t *lock; /* Pointer to lock (for fast access) */
 } r_entry_t;
 
 typedef struct r_set
@@ -75,17 +75,19 @@ typedef struct r_set
 } r_set_t;
 
 typedef struct w_entry
-{                                       /* Write set entry */
-    union {                             /* For padding... */
+{           /* Write set entry */
+    union { /* For padding... */
         struct
         {
-            volatile stm_word_t *addr; /* Address written */
-            stm_word_t value;          /* New (write-back) or old (write-through) value */
-            stm_word_t mask;           /* Write mask */
-            stm_word_t version;        /* Version overwritten */
-            volatile stm_word_t *lock; /* Pointer to lock (for fast access) */
-            TYPE struct w_entry *next;      /* WRITE_BACK_ETL || WRITE_THROUGH: Next address
-                                          covered by same lock (if any) */
+            volatile stm_word_t *addr;         /* Address written */
+            stm_word_t value;                  /* New (write-back) or old (write-through) value */
+            stm_word_t mask;                   /* Write mask */
+            stm_word_t version;                /* Version overwritten */
+            volatile TYPE_OR stm_word_t *lock; /* Pointer to lock (for fast access) */
+            union {
+                TYPE struct w_entry *next;     /* WRITE_BACK_ETL || WRITE_THROUGH: Next address covered by same lock (if any) */
+                stm_word_t no_drop;            /* WRITE_BACK_CTL: Should we drop lock upon abort? */
+            };
         };
         char padding[CACHELINE_SIZE]; /* Padding (multiple of a cache line) */
                                       /* Note padding is not useful here as long as the address can be defined in
@@ -93,13 +95,16 @@ typedef struct w_entry
     };
 } w_entry_t;
 
-
 typedef struct w_set
-{                            /* Write set */
-    // w_entry_t *entries;   /* Array of entries */
-    w_entry_t entries[2];    /* Array of entries */
-    unsigned int nb_entries; /* Number of entries */
-    unsigned int size;       /* Size of array */
+{                               /* Write set */
+    // w_entry_t *entries;      /* Array of entries */
+    w_entry_t entries[2];       /* Array of entries */
+    unsigned int nb_entries;    /* Number of entries */
+    unsigned int size;          /* Size of array */
+    union {
+        unsigned int has_writes;
+        unsigned int nb_acquired;
+    };   /* WRITE_BACK_CTL: Number of locks acquired */
 } w_set_t;
 
 
@@ -117,12 +122,16 @@ typedef struct stm_tx
 
 typedef struct
 {
-    volatile stm_word_t locks[LOCK_ARRAY_SIZE]; /* TODO: aligned??? */
-    volatile stm_word_t gclock;                 /* TODO: aligned??? */
-    unsigned int initialized;                   /* Has the library been initialized? */
-} global_t;                                     /* TODO: aligned??? */
+    volatile stm_word_t locks[LOCK_ARRAY_SIZE];
+    volatile stm_word_t gclock;
+    unsigned int initialized;
+} global_t;
 
+#ifdef OR_IN_MRAM
+extern global_t __mram_noinit _tinystm;
+#else
 extern global_t _tinystm;
+#endif
 
 static void stm_rollback(TYPE stm_tx_t *tx, unsigned int reason);
 
@@ -130,23 +139,44 @@ static void stm_rollback(TYPE stm_tx_t *tx, unsigned int reason);
  * Check if stripe has been read previously.
  */
 static inline TYPE r_entry_t *
-stm_has_read(TYPE stm_tx_t *tx, volatile stm_word_t *lock)
+stm_has_read(TYPE stm_tx_t *tx, volatile TYPE_OR stm_word_t *lock)
 {
     TYPE r_entry_t *r;
-    int i;
-
+    
     PRINT_DEBUG("==> stm_has_read(%p[%lu-%lu],%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, lock);
 
     /* Look for read */
     r = tx->r_set.entries;
-    for (i = tx->r_set.nb_entries; i > 0; i--, r++)
+    for (int i = tx->r_set.nb_entries; i > 0; i--, r++)
     {
         if (r->lock == lock)
         {
             return r;
         }
     }
+
     return NULL;
+}
+
+/*
+ * Check if address has been written previously.
+ */
+static inline TYPE w_entry_t *
+stm_has_written(TYPE stm_tx_t *tx, volatile TYPE_OR stm_word_t *addr)
+{
+  w_entry_t *w;
+
+  PRINT_DEBUG("==> stm_has_written(%p[%lu-%lu],%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, addr);
+
+  /* Look for write */
+  w = tx->w_set.entries;
+  for (int i = tx->w_set.nb_entries; i > 0; i--, w++) {
+    if (w->addr == addr) {
+      return w;
+    }
+  }
+
+  return NULL;
 }
 
 // TODO change alocation to DPU
@@ -171,7 +201,43 @@ stm_allocate_rs_entries(TYPE stm_tx_t *tx, int extend)
     exit(1);
 }
 
+
+/*
+ * (Re)allocate write set entries.
+ */
+static void 
+stm_allocate_ws_entries(stm_tx_t *tx, int extend)
+{
+    PRINT_DEBUG("==> stm_allocate_ws_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end,
+                extend);
+
+    // if (extend)
+    // {
+    //     /* Extend write set */
+    //     /* Transaction must be inactive for WRITE_THROUGH or WRITE_BACK_ETL */
+    //     tx->w_set.size *= 2;
+    //     tx->w_set.entries = (w_entry_t *)xrealloc(tx->w_set.entries, tx->w_set.size * sizeof(w_entry_t));
+    // }
+    // else
+    // {
+    //     /* Allocate write set */
+    //     tx->w_set.entries = (w_entry_t *)xmalloc_aligned(tx->w_set.size * sizeof(w_entry_t));
+    // }
+    // /* Ensure that memory is aligned. */
+    // assert((((stm_word_t)tx->w_set.entries) & OWNED_MASK) == 0);
+
+    printf("[Warning!] Reached allocation function, aborting\n");
+    exit(1);
+}
+
+#if defined(WRITE_BACK_CTL)
+#include "tiny_wbctl.h"
+#elif defined(WRITE_BACK_ETL)
+#include "tiny_wbetl.h"
+#elif defined(WRITE_THROUGH_ETL) 
 #include "tiny_wtetl.h"
+#endif
+
 
 /*
  * Initialize the transaction descriptor before start or restart.
@@ -180,7 +246,9 @@ static inline void
 int_stm_prepare(TYPE stm_tx_t *tx)
 {
     /* Read/write set */
-    /* tx->w_set.nb_acquired = 0; */
+    tx->w_set.has_writes = 0;
+    // tx->w_set.nb_acquired = 0;
+
     tx->w_set.nb_entries = 0;
     tx->r_set.nb_entries = 0;
 
@@ -211,9 +279,7 @@ int_stm_start(TYPE stm_tx_t *tx)
 {
     PRINT_DEBUG("==> stm_start(%p)\n", tx);
 
-    /* TODO Nested transaction attributes are not checked if they are coherent
-     * with parent ones.  */
-
+    /* TODO Nesting.  */
     /* Increment nesting level */
     // if (tx->nesting++ > 0)
     // {
@@ -235,7 +301,13 @@ stm_rollback(TYPE stm_tx_t *tx, unsigned int reason)
 
     assert(IS_ACTIVE(tx->status));
 
+#if defined(WRITE_BACK_CTL)
+    stm_wbctl_rollback(tx);
+#elif defined(WRITE_BACK_ETL)
+    stm_wbetl_rollback(tx);
+#elif defined(WRITE_THROUGH_ETL) 
     stm_wtetl_rollback(tx);
+#endif
 
     /* Set status to ABORTED */
     SET_STATUS(tx->status, TX_ABORTED);
@@ -256,13 +328,28 @@ stm_rollback(TYPE stm_tx_t *tx, unsigned int reason)
 static inline stm_word_t 
 int_stm_load(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
+#if defined(WRITE_BACK_CTL)
+    return stm_wbctl_read(tx, addr);
+#elif defined(WRITE_BACK_ETL)
+    return stm_wbetl_read(tx, addr);
+#elif defined(WRITE_THROUGH_ETL) 
     return stm_wtetl_read(tx, addr);
+#endif
 }
 
 static inline void 
 int_stm_store(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value)
 {
+    PRINT_DEBUG("==> int_stm_store(t=%p[%lu-%lu],a=%p,d=%p-%lu)\n",
+               tx, (unsigned long)tx->start, (unsigned long)tx->end, addr, (void *)value, (unsigned long)value);
+
+#if defined(WRITE_BACK_CTL)
+    stm_wbctl_write(tx, addr, value, ~(stm_word_t)0);
+#elif defined(WRITE_BACK_ETL)
+    stm_wbetl_write(tx, addr, value, ~(stm_word_t)0);
+#elif defined(WRITE_THROUGH_ETL) 
     stm_wtetl_write(tx, addr, value, ~(stm_word_t)0);
+#endif
 }
 
 static inline int
@@ -281,7 +368,13 @@ int_stm_commit(TYPE stm_tx_t *tx)
     /* A read-only transaction can commit immediately */
     if (tx->w_set.nb_entries != 0)
     {
+#if defined(WRITE_BACK_CTL)
+        stm_wbctl_commit(tx);
+#elif defined(WRITE_BACK_ETL)
+        stm_wbetl_commit(tx);
+#elif defined(WRITE_THROUGH_ETL)
         stm_wtetl_commit(tx);
+#endif
     }
 
     /* Set status to COMMITTED */

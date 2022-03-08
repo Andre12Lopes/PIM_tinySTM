@@ -58,13 +58,13 @@ AO_int_fetch_and_add_full(volatile size_t *addr, size_t inc)
 }
 
 static inline void
-acquire(volatile size_t *addr)
+acquire(volatile TYPE_OR size_t *addr)
 {
     __asm__ __volatile__("acquire %[p], 0, nz, ." : : [p] "r"(addr) :);
 }
 
 static inline void
-release(volatile size_t *addr)
+release(volatile TYPE_OR size_t *addr)
 {
     __asm__ __volatile__("release %[p], 0, nz, .+1" : : [p] "r"(addr) :);
 }

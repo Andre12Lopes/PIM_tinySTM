@@ -71,16 +71,15 @@ int main()
         ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
         rc = (RAND_R_FNC(s) % 100) + 1;
-
-        
+      
 #ifdef TX_IN_MRAM
         START(&(tx_mram[tid]));
 
-        a = LOAD(&(tx_mram[tid]), &bank[ra], t_aborts);
+        a = LOAD(&(tx_mram[tid]), &bank[ra], t_aborts, tid);
         a -= TRANSFER;
         STORE(&(tx_mram[tid]), &bank[ra], a, t_aborts);
 
-        b = LOAD(&(tx_mram[tid]), &bank[rb], t_aborts);
+        b = LOAD(&(tx_mram[tid]), &bank[rb], t_aborts, tid);
         b += TRANSFER;
         STORE(&(tx_mram[tid]), &bank[rb], b, t_aborts);
 
@@ -88,36 +87,34 @@ int main()
 #else
         START(&tx);
 
-        a = LOAD(&tx, &bank[ra], t_aborts);
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
         a -= TRANSFER;
         STORE(&tx, &bank[ra], a, t_aborts);
 
-        b = LOAD(&tx, &bank[rb], t_aborts);
+        b = LOAD(&tx, &bank[rb], t_aborts, tid);
         b += TRANSFER;
         STORE(&tx, &bank[rb], b, t_aborts);
 
         COMMIT(&tx, t_aborts);
 #endif
 
-        // START_DEBUG(&tx, tid, buffer, idx);
-        // a = LOAD_DEBUG(&tx, &bank[ra], buffer, idx, ra);
-        // a -= TRANSFER;
-        // STORE_DEBUG(&tx, &bank[ra], a, buffer, idx, ra);
-        // b = LOAD_DEBUG(&tx, &bank[rb], buffer, idx, rb);
-        // b += TRANSFER;
-        // STORE_DEBUG(&tx, &bank[rb], b, buffer, idx, rb);
-        // COMMIT_DEBUG(&tx, buffer, idx);
-
-#ifdef RO_TX
+#if defined(RO_TX) && defined(TX_IN_MRAM)
         if (rc <= 5)
         {
-            START(tx, tid);
+            START(&(tx_mram[tid]));
 
             t = 0;
-            t += LOAD(tx, &bank[0], t_aborts);
-            t += LOAD(tx, &bank[1], t_aborts);
+            for (int i = 0; i < N_ACCOUNTS; ++i)
+            {
+                t += LOAD_RO(&(tx_mram[tid]), &bank[i], t_aborts);
+            }
 
-            COMMIT(tx, t_aborts);
+            if (tx_mram[tid].status == 4)
+            {
+                continue;
+            }
+
+            COMMIT(&(tx_mram[tid]), t_aborts);
 
             assert(t == (N_ACCOUNTS * ACCOUNT_V));
         }

@@ -26,8 +26,9 @@ def process(file, num_threads, num_runs):
 		aborts[int(run[0]) - 1].append(int(run[3]))
 
 	f = open(f'{file}_processed', 'w')
+	f.write(f'N_THREADS\tN_TRANSACTIONS\tAVG_TIME\tSTDEV_TIME\tAVG_ABORTS\tSTDEV_ABORTS\n')
 	for i in range(num_threads):
-		f.write(f'{i}\t{data[i * num_runs][1]}\t{statistics.mean(time[i])}\t{statistics.stdev(time[i])}\t{statistics.mean(aborts[i])}\t{statistics.stdev(aborts[i])}\n')
+		f.write(f'{i + 1}\t{data[i * num_runs][1]}\t{statistics.mean(time[i])}\t{statistics.stdev(time[i])}\t{statistics.mean(aborts[i])}\t{statistics.stdev(aborts[i])}\n')
 	f.close()
 
 if __name__ == "__main__":
