@@ -2,6 +2,7 @@
 #define _TINY_WBCTL_H_
 
 #include "atomic.h"
+
 static inline int 
 stm_wbctl_validate(stm_tx_t *tx)
 {
@@ -9,7 +10,8 @@ stm_wbctl_validate(stm_tx_t *tx)
     int i;
     stm_word_t l;
 
-    PRINT_DEBUG("==> stm_wbctl_validate(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
+    PRINT_DEBUG("==> stm_wbctl_validate(%p[%lu-%lu])\n", tx, 
+                (unsigned long)tx->start, (unsigned long)tx->end);
 
     /* Validate reads */
     r = tx->r_set.entries;
@@ -51,7 +53,6 @@ stm_wbctl_validate(stm_tx_t *tx)
     return 1;
 }
 
-
 /*
  * Extend snapshot range.
  */
@@ -60,12 +61,13 @@ stm_wbctl_extend(TYPE stm_tx_t *tx)
 {
     stm_word_t now;
 
-    PRINT_DEBUG("==> stm_wbctl_extend(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
+    PRINT_DEBUG("==> stm_wbctl_extend(%p[%lu-%lu])\n", tx, 
+                (unsigned long)tx->start, (unsigned long)tx->end);
 
     /* Get current time */
     now = GET_CLOCK;
-    /* No need to check clock overflow here. The clock can exceed up to MAX_THREADS and it will be reset when the
-     * quiescence is reached. */
+    /* No need to check clock overflow here. The clock can exceed 
+       up to MAX_THREADS and it will be reset when the quiescence is reached. */
 
     /* Try to validate read set */
     if (stm_wbctl_validate(tx))
@@ -78,13 +80,13 @@ stm_wbctl_extend(TYPE stm_tx_t *tx)
     return 0;
 }
 
-
 static inline void 
 stm_wbctl_rollback(TYPE stm_tx_t *tx)
 {
     w_entry_t *w;
 
-    PRINT_DEBUG("==> stm_wbctl_rollback(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
+    PRINT_DEBUG("==> stm_wbctl_rollback(%p[%lu-%lu])\n", tx, 
+                (unsigned long)tx->start, (unsigned long)tx->end);
 
     assert(IS_ACTIVE(tx->status));
 
@@ -110,7 +112,6 @@ stm_wbctl_rollback(TYPE stm_tx_t *tx)
     }
 }
 
-
 static inline stm_word_t 
 stm_wbctl_read(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
@@ -119,8 +120,8 @@ stm_wbctl_read(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
     r_entry_t *r;
     w_entry_t *written = NULL;
 
-    PRINT_DEBUG("==> stm_wbctl_read(t=%p[%lu-%lu],a=%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end,
-                 addr);
+    PRINT_DEBUG("==> stm_wbctl_read(t=%p[%lu-%lu],a=%p)\n", tx, 
+                (unsigned long)tx->start, (unsigned long)tx->end, addr);
 
     assert(IS_ACTIVE(tx->status));
 
@@ -213,7 +214,6 @@ restart_no_load:
     return value;
 }
 
-
 static inline w_entry_t *
 stm_wbctl_write(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
@@ -221,8 +221,9 @@ stm_wbctl_write(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_w
     stm_word_t l, version;
     w_entry_t *w;
 
-    PRINT_DEBUG("==> stm_wbctl_write(t=%p[%lu-%lu],a=%p,d=%p-%lu,m=0x%lx)\n", tx, (unsigned long)tx->start,
-                 (unsigned long)tx->end, addr, (void *)value, (unsigned long)value, (unsigned long)mask);
+    PRINT_DEBUG("==> stm_wbctl_write(t=%p[%lu-%lu],a=%p,d=%p-%lu,m=0x%lx)\n", tx, 
+                (unsigned long)tx->start, (unsigned long)tx->end, addr, 
+                (void *)value, (unsigned long)value, (unsigned long)mask);
 
     /* Get reference to lock */
     lock = GET_LOCK(addr);
@@ -301,7 +302,8 @@ stm_wbctl_commit(stm_tx_t *tx)
     int i;
     stm_word_t l, l1, value;
 
-    PRINT_DEBUG("==> stm_wbctl_commit(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
+    PRINT_DEBUG("==> stm_wbctl_commit(%p[%lu-%lu])\n", tx, 
+                (unsigned long)tx->start, (unsigned long)tx->end);
 
     /* Acquire locks (in reverse order) */
     w = tx->w_set.entries + tx->w_set.nb_entries;
@@ -342,13 +344,11 @@ stm_wbctl_commit(stm_tx_t *tx)
 
         /* We own the lock here */
         w->no_drop = 0;
-        
+
         /* Store version for validation of read set */
         w->version = LOCK_GET_TIMESTAMP(l);
         tx->w_set.nb_acquired++;
     } while (w > tx->w_set.entries);
-
-    ATOMIC_B_WRITE
 
     /* Get commit timestamp (may exceed VERSION_MAX by up to MAX_THREADS) */
     t = FETCH_INC_CLOCK;
@@ -374,14 +374,13 @@ stm_wbctl_commit(stm_tx_t *tx)
             value = (ATOMIC_LOAD(w->addr) & ~w->mask) | (w->value & w->mask);
             ATOMIC_STORE(w->addr, value);
         }
+
         /* Only drop lock for last covered address in write set (cannot be "no drop") */
         if (!w->no_drop)
-    	{
-        	ATOMIC_STORE_REL(w->lock, LOCK_SET_TIMESTAMP(t));
-    	}
+        {
+            ATOMIC_STORE_REL(w->lock, LOCK_SET_TIMESTAMP(t));
+        }
     }
-
-    ATOMIC_B_WRITE
 
 end:
     return 1;
