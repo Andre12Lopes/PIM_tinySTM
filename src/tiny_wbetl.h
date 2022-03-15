@@ -381,6 +381,7 @@ do_write:
     return w;
 }
 
+
 static inline int 
 stm_wbetl_commit(stm_tx_t *tx)
 {

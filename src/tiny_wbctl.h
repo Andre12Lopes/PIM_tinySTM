@@ -53,6 +53,7 @@ stm_wbctl_validate(stm_tx_t *tx)
     return 1;
 }
 
+
 /*
  * Extend snapshot range.
  */
@@ -79,6 +80,7 @@ stm_wbctl_extend(TYPE stm_tx_t *tx)
 
     return 0;
 }
+
 
 static inline void 
 stm_wbctl_rollback(TYPE stm_tx_t *tx)
@@ -111,6 +113,7 @@ stm_wbctl_rollback(TYPE stm_tx_t *tx)
         } while (tx->w_set.nb_acquired > 0);
     }
 }
+
 
 static inline stm_word_t 
 stm_wbctl_read(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
@@ -214,6 +217,7 @@ restart_no_load:
     return value;
 }
 
+
 static inline w_entry_t *
 stm_wbctl_write(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
@@ -293,6 +297,7 @@ do_write:
 
     return w;
 }
+
 
 static inline int 
 stm_wbctl_commit(stm_tx_t *tx)

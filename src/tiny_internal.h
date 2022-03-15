@@ -55,10 +55,11 @@ enum
     TX_KILLED = (3 << 1) | TX_ACTIVE,
 };
 
-#define SET_STATUS(s, v) ((s) = (v))
+#define SET_STATUS(s, v)    ((s) = (v))
 #define UPDATE_STATUS(s, v) ((s) = (v))
-#define GET_STATUS(s) ((s))
-#define IS_ACTIVE(s) ((GET_STATUS(s) & 0x01) == TX_ACTIVE)
+#define GET_STATUS(s)       ((s))
+#define IS_ACTIVE(s)        ((GET_STATUS(s) & 0x01) == TX_ACTIVE)
+#define IS_ABORTED(s)       ((GET_STATUS(s) & 0x04) == TX_ABORTED)
 
 typedef struct r_entry
 {                              /* Read set entry */
@@ -93,7 +94,7 @@ typedef struct w_entry
                                       /* Note padding is not useful here as long as the address can be defined in
                                        * the lock scheme. */
     };
-} w_entry_t;
+} w_entry_t __attribute__((aligned(16)));
 
 typedef struct w_set
 {                               /* Write set */
@@ -375,6 +376,11 @@ int_stm_commit(TYPE stm_tx_t *tx)
 #elif defined(WRITE_THROUGH_ETL)
         stm_wtetl_commit(tx);
 #endif
+    }
+
+    if (IS_ABORTED(tx->status))
+    {
+        return 0;
     }
 
     /* Set status to COMMITTED */

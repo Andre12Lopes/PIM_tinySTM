@@ -63,7 +63,6 @@ int main()
         initial_time = perfcounter_config(COUNT_CYCLES, false);
     }
 
-
     // ------------------------------------------------------
 
     for (int i = 0; i < N_TRANSACTIONS; ++i)

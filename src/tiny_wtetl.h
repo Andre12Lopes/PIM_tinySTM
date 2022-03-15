@@ -26,6 +26,7 @@ stm_wtetl_add_to_rs(TYPE stm_tx_t *tx, stm_word_t version, volatile TYPE_OR stm_
     r->lock = lock;
 }
 
+
 static inline int 
 stm_wtetl_validate(TYPE stm_tx_t *tx)
 {
@@ -70,6 +71,7 @@ stm_wtetl_validate(TYPE stm_tx_t *tx)
     return 1;
 }
 
+
 /*
  * Extend snapshot range.
  */
@@ -96,23 +98,24 @@ stm_wtetl_extend(TYPE stm_tx_t *tx)
     return 0;
 }
 
+
 static inline void 
 stm_wtetl_rollback(TYPE stm_tx_t *tx)
 {
-    int i;
     TYPE w_entry_t *w;
-    // stm_word_t t;
+    stm_word_t t;
 
-    PRINT_DEBUG("==> stm_wtetl_rollback(%p[%lu-%lu]) N entries = %u\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, tx->w_set.nb_entries);
+    PRINT_DEBUG("==> stm_wtetl_rollback(%p[%lu-%lu]) N entries = %u\n", tx, (unsigned long)tx->start,
+                (unsigned long)tx->end, tx->w_set.nb_entries);
 
     assert(IS_ACTIVE(tx->status));
 
-    // t = 0;
+    t = 0;
     /* Undo writes and drop locks */
     w = tx->w_set.entries;
-    for (i = tx->w_set.nb_entries; i > 0; i--, w++)
+    for (int i = tx->w_set.nb_entries; i > 0; i--, w++)
     {
-        // stm_word_t j;
+        stm_word_t j;
         /* Restore previous value */
         if (w->mask != 0)
         {
@@ -123,34 +126,25 @@ stm_wtetl_rollback(TYPE stm_tx_t *tx)
         {
             continue;
         }
-        // TODO
+
         /* Incarnation numbers allow readers to detect dirty reads */
-        // j = LOCK_GET_INCARNATION(w->version) + 1;
-        // if (j > INCARNATION_MAX)
-        // {
-        //     /* Simple approach: write new version (might trigger unnecessary
-        //     aborts) */ 
-        //     if (t == 0)
-        //     {
-        //         /* Get new version (may exceed VERSION_MAX by up to
-        //         MAX_THREADS) */ 
-        //         t = FETCH_INC_CLOCK + 1;
-        //     }
-        //     ATOMIC_STORE_REL(w->lock, LOCK_SET_TIMESTAMP(t));
-        // }
-        // else
-        // {
-        /* Use new incarnation number */
-        //      ATOMIC_STORE_REL(w->lock, LOCK_UPD_INCARNATION(w->version, j));
-        // }
+        j = LOCK_GET_INCARNATION(w->version) + 1;
+        if (j > INCARNATION_MAX)
+        {
+            /* Simple approach: write new version (might trigger unnecessary aborts) */
+            if (t == 0)
+            {
+                /* Get new version (may exceed VERSION_MAX by up to MAX_THREADS) */
+                t = FETCH_INC_CLOCK;
+            }
 
-        // TODO -> change to account for incarnation
-
-        ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(w->version));
-        // *(w->lock) = LOCK_SET_TIMESTAMP(w->version);
-
-        // stm_word_t l;
-        // l = ATOMIC_LOAD_ACQ(w->lock);
+            ATOMIC_STORE_REL(w->lock, LOCK_SET_TIMESTAMP(t));
+        }
+        else
+        {
+            /* Use new incarnation number */
+            ATOMIC_STORE_REL(w->lock, LOCK_UPD_INCARNATION(w->version, j));
+        }
     }
 
     /* Make sure that all lock releases become visible */
@@ -224,6 +218,7 @@ restart_no_load:
         return 0;
     }
 }
+
 
 static inline TYPE w_entry_t *
 stm_wtetl_write(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
@@ -391,6 +386,7 @@ do_write:
 
     return w;
 }
+
 
 static inline int
 stm_wtetl_commit(TYPE stm_tx_t *tx)
