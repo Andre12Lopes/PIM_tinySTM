@@ -34,9 +34,10 @@ int main(void)
         dpu.copy(nThreads, "n_tasklets");
 
         double time = (double) nbCycles.front().front() / clocksPerSec.front().front();
+        long aborts = nAborts.front().front();
 
         // std::cout << "N threads" <<
-        std::cout << (double) nThreads.front().front() <<  "\t" << nTransactions.front().front() << "\t" << time << "\t" << nAborts.front().front() << std::endl;
+        std::cout << (double) nThreads.front().front() <<  "\t" << nTransactions.front().front() << "\t" << time << "\t" << ((double) aborts * 100) / (aborts + nTransactions.front().front()) << std::endl;
 
         // std::cout << "Tx/s = " << (double)nTransactions.front().front() / time << std::endl;
         // std::cout << "Abort rate = " << ((double) nAborts.front().front() * 100) / nTransactions.front().front() << std::endl;
