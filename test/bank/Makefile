@@ -16,7 +16,6 @@ LDFLAGS += -L$(LIBDIR) -l$(TM)
 CPPFLAGS += -I$(SRCDIR)
 
 # DEFINES += -DTX_IN_MRAM
-# DEFINES += -DOR_IN_MRAM
 # DEFINES += -DRO_TX
 
 .PHONY:	all clean

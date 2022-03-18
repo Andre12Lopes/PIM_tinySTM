@@ -69,7 +69,7 @@ int main()
     {
         ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
-#if defined(RO_TX) && defined(TX_IN_MRAM)
+#ifdef RO_TX
         rc = (RAND_R_FNC(s) % 100) + 1;
 #endif
 
@@ -101,14 +101,15 @@ int main()
 #endif
 
 #if defined(RO_TX) && defined(TX_IN_MRAM)
-        if (rc <= 5)
+        if (rc <= 10)
         {
             START(&(tx_mram[tid]));
 
             t = 0;
-            for (int i = 0; i < N_ACCOUNTS; ++i)
+
+            for (int j = 0; j < N_ACCOUNTS; ++j)
             {
-                t += LOAD_RO(&(tx_mram[tid]), &bank[i], t_aborts);
+                t += LOAD_RO(&(tx_mram[tid]), &bank[j], t_aborts);
             }
 
             if (tx_mram[tid].status == 4)
@@ -120,7 +121,7 @@ int main()
 
             assert(t == (N_ACCOUNTS * ACCOUNT_V));
         }
-#endif 
+#endif
     }
 
     // ------------------------------------------------------

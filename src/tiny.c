@@ -5,11 +5,7 @@
 #include "tiny.h"
 #include "tiny_internal.h"
 
-#ifdef OR_IN_MRAM
-global_t __mram_noinit _tinystm;
-#else
 global_t _tinystm;
-#endif
 
 void 
 stm_init(void)

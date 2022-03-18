@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 static inline void 
-stm_wtetl_add_to_rs(TYPE stm_tx_t *tx, stm_word_t version, volatile TYPE_OR stm_word_t *lock)
+stm_wtetl_add_to_rs(TYPE stm_tx_t *tx, stm_word_t version, volatile stm_word_t *lock)
 {
     TYPE r_entry_t *r;
 
@@ -27,8 +27,7 @@ stm_wtetl_add_to_rs(TYPE stm_tx_t *tx, stm_word_t version, volatile TYPE_OR stm_
 }
 
 
-static inline int 
-stm_wtetl_validate(TYPE stm_tx_t *tx)
+static inline int stm_wtetl_validate(TYPE stm_tx_t *tx)
 {
     TYPE r_entry_t *r;
     int i;
@@ -154,7 +153,7 @@ stm_wtetl_rollback(TYPE stm_tx_t *tx)
 static inline stm_word_t 
 stm_wtetl_read(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
-    volatile TYPE_OR stm_word_t *lock_addr;
+    volatile stm_word_t *lock_addr;
     stm_word_t l1, l2, value, version;
     w_entry_t *w;
 
@@ -214,16 +213,18 @@ restart_no_load:
         }
 
         stm_rollback(tx, STM_ABORT_RW_CONFLICT);
-
+        
         return 0;
     }
+
+    
 }
 
 
 static inline TYPE w_entry_t *
 stm_wtetl_write(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
-    volatile TYPE_OR stm_word_t *lock;
+    volatile stm_word_t *lock;
     stm_word_t l, l1, version;
     TYPE w_entry_t *w;
     TYPE w_entry_t *prev = NULL;

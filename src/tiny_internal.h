@@ -64,48 +64,38 @@ enum
 typedef struct r_entry
 {                              /* Read set entry */
     stm_word_t version;        /* Version read */
-    volatile TYPE_OR stm_word_t *lock; /* Pointer to lock (for fast access) */
+    volatile stm_word_t *lock; /* Pointer to lock (for fast access) */
 } r_entry_t;
 
 typedef struct r_set
-{                            /* Read set */
-    // r_entry_t *entries;   /* Array of entries */
-    r_entry_t entries[2];    /* Array of entries */
+{                            /* Read set */   /* Array of entries */
+    r_entry_t entries[800];  /* Array of entries */
     unsigned int nb_entries; /* Number of entries */
     unsigned int size;       /* Size of array */
 } r_set_t;
 
 typedef struct w_entry
 {           /* Write set entry */
-    union { /* For padding... */
-        struct
-        {
-            volatile stm_word_t *addr;         /* Address written */
-            stm_word_t value;                  /* New (write-back) or old (write-through) value */
-            stm_word_t mask;                   /* Write mask */
-            stm_word_t version;                /* Version overwritten */
-            volatile TYPE_OR stm_word_t *lock; /* Pointer to lock (for fast access) */
-            union {
-                TYPE struct w_entry *next;     /* WRITE_BACK_ETL || WRITE_THROUGH: Next address covered by same lock (if any) */
-                stm_word_t no_drop;            /* WRITE_BACK_CTL: Should we drop lock upon abort? */
-            };
-        };
-        char padding[CACHELINE_SIZE]; /* Padding (multiple of a cache line) */
-                                      /* Note padding is not useful here as long as the address can be defined in
-                                       * the lock scheme. */
+    struct
+    {
+        volatile stm_word_t *addr;         /* Address written */
+        stm_word_t value;                  /* New (write-back) or old (write-through) value */
+        stm_word_t mask;                   /* Write mask */
+        stm_word_t version;                /* Version overwritten */
+        volatile stm_word_t *lock; /* Pointer to lock (for fast access) */
+        TYPE struct w_entry *next;     /* WRITE_BACK_ETL || WRITE_THROUGH: Next address covered by same lock (if any) */
+        stm_word_t no_drop;            /* WRITE_BACK_CTL: Should we drop lock upon abort? */
     };
 } w_entry_t __attribute__((aligned(16)));
 
 typedef struct w_set
-{                               /* Write set */
-    // w_entry_t *entries;      /* Array of entries */
+{                               /* Write set */     /* Array of entries */
     w_entry_t entries[2];       /* Array of entries */
     unsigned int nb_entries;    /* Number of entries */
     unsigned int size;          /* Size of array */
-    union {
-        unsigned int has_writes;
-        unsigned int nb_acquired;
-    };   /* WRITE_BACK_CTL: Number of locks acquired */
+    unsigned int has_writes;
+    unsigned int nb_acquired;
+       /* WRITE_BACK_CTL: Number of locks acquired */
 } w_set_t;
 
 
@@ -116,7 +106,7 @@ typedef struct stm_tx
     stm_word_t end;             /* End timestamp (validity range) */
     r_set_t r_set;              /* Read set */
     w_set_t w_set;              /* Write set */
-    unsigned int nesting;       /* Nesting level */
+    // unsigned int nesting;       /* Nesting level */
     unsigned int read_only;
 } stm_tx_t;
 
@@ -128,19 +118,16 @@ typedef struct
     unsigned int initialized;
 } global_t;
 
-#ifdef OR_IN_MRAM
-extern global_t __mram_noinit _tinystm;
-#else
 extern global_t _tinystm;
-#endif
 
-static void stm_rollback(TYPE stm_tx_t *tx, unsigned int reason);
+static void 
+stm_rollback(TYPE stm_tx_t *tx, unsigned int reason);
 
 /*
  * Check if stripe has been read previously.
  */
 static inline TYPE r_entry_t *
-stm_has_read(TYPE stm_tx_t *tx, volatile TYPE_OR stm_word_t *lock)
+stm_has_read(TYPE stm_tx_t *tx, volatile stm_word_t *lock)
 {
     TYPE r_entry_t *r;
     
@@ -163,9 +150,9 @@ stm_has_read(TYPE stm_tx_t *tx, volatile TYPE_OR stm_word_t *lock)
  * Check if address has been written previously.
  */
 static inline TYPE w_entry_t *
-stm_has_written(TYPE stm_tx_t *tx, volatile TYPE_OR stm_word_t *addr)
+stm_has_written(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
-  w_entry_t *w;
+  TYPE w_entry_t *w;
 
   PRINT_DEBUG("==> stm_has_written(%p[%lu-%lu],%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, addr);
 
@@ -207,7 +194,7 @@ stm_allocate_rs_entries(TYPE stm_tx_t *tx, int extend)
  * (Re)allocate write set entries.
  */
 static void 
-stm_allocate_ws_entries(stm_tx_t *tx, int extend)
+stm_allocate_ws_entries(TYPE stm_tx_t *tx, int extend)
 {
     PRINT_DEBUG("==> stm_allocate_ws_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end,
                 extend);
@@ -231,14 +218,17 @@ stm_allocate_ws_entries(stm_tx_t *tx, int extend)
     exit(1);
 }
 
-#if defined(WRITE_BACK_CTL)
+#ifdef WRITE_BACK_CTL
 #include "tiny_wbctl.h"
-#elif defined(WRITE_BACK_ETL)
-#include "tiny_wbetl.h"
-#elif defined(WRITE_THROUGH_ETL) 
-#include "tiny_wtetl.h"
 #endif
 
+#ifdef WRITE_BACK_ETL
+#include "tiny_wbetl.h"
+#endif
+
+#ifdef WRITE_THROUGH_ETL
+#include "tiny_wtetl.h"
+#endif
 
 /*
  * Initialize the transaction descriptor before start or restart.
@@ -248,13 +238,13 @@ int_stm_prepare(TYPE stm_tx_t *tx)
 {
     /* Read/write set */
     tx->w_set.has_writes = 0;
-    // tx->w_set.nb_acquired = 0;
+    tx->w_set.nb_acquired = 0;
 
     tx->w_set.nb_entries = 0;
     tx->r_set.nb_entries = 0;
 
     tx->w_set.size = 2;
-    tx->r_set.size = 2;
+    tx->r_set.size = 800;
 
     // start:
     /* Start timestamp */
@@ -320,7 +310,7 @@ stm_rollback(TYPE stm_tx_t *tx, unsigned int reason)
     // }
 
     /* Reset nesting level */
-    tx->nesting = 1;
+    // tx->nesting = 1;
 
     /* Reset field to restart transaction */
     //int_stm_prepare(tx);

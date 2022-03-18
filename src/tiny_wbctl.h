@@ -1,12 +1,10 @@
 #ifndef _TINY_WBCTL_H_
 #define _TINY_WBCTL_H_
 
-#include "atomic.h"
-
 static inline int 
-stm_wbctl_validate(stm_tx_t *tx)
+stm_wbctl_validate(TYPE stm_tx_t *tx)
 {
-    r_entry_t *r;
+    TYPE r_entry_t *r;
     int i;
     stm_word_t l;
 
@@ -85,7 +83,7 @@ stm_wbctl_extend(TYPE stm_tx_t *tx)
 static inline void 
 stm_wbctl_rollback(TYPE stm_tx_t *tx)
 {
-    w_entry_t *w;
+    TYPE w_entry_t *w;
 
     PRINT_DEBUG("==> stm_wbctl_rollback(%p[%lu-%lu])\n", tx, 
                 (unsigned long)tx->start, (unsigned long)tx->end);
@@ -120,8 +118,8 @@ stm_wbctl_read(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
     volatile stm_word_t *lock;
     stm_word_t l, l2, value, version;
-    r_entry_t *r;
-    w_entry_t *written = NULL;
+    TYPE r_entry_t *r;
+    TYPE w_entry_t *written = NULL;
 
     PRINT_DEBUG("==> stm_wbctl_read(t=%p[%lu-%lu],a=%p)\n", tx, 
                 (unsigned long)tx->start, (unsigned long)tx->end, addr);
@@ -218,12 +216,12 @@ restart_no_load:
 }
 
 
-static inline w_entry_t *
-stm_wbctl_write(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
+static inline TYPE w_entry_t *
+stm_wbctl_write(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
     volatile stm_word_t *lock;
     stm_word_t l, version;
-    w_entry_t *w;
+    TYPE w_entry_t *w;
 
     PRINT_DEBUG("==> stm_wbctl_write(t=%p[%lu-%lu],a=%p,d=%p-%lu,m=0x%lx)\n", tx, 
                 (unsigned long)tx->start, (unsigned long)tx->end, addr, 
@@ -300,9 +298,9 @@ do_write:
 
 
 static inline int 
-stm_wbctl_commit(stm_tx_t *tx)
+stm_wbctl_commit(TYPE stm_tx_t *tx)
 {
-    w_entry_t *w;
+    TYPE w_entry_t *w;
     stm_word_t t;
     int i;
     stm_word_t l, l1, value;

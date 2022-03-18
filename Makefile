@@ -39,7 +39,6 @@ CFLAGS += -Wall -Wextra -Wno-unused-label -Wno-unused-function
 CPPFLAGS += -I$(SRCDIR)
 
 # DEFINES += -DTX_IN_MRAM
-# DEFINES += -DOR_IN_MRAM
 
 DEFINES += -DWRITE_BACK_CTL
 # DEFINES += -DWRITE_BACK_ETL

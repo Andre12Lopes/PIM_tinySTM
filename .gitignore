@@ -17,3 +17,7 @@ test/bank/transaction.history
 test/benchmark/launch
 
 results_*
+
+acc
+contention
+read_only

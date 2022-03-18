@@ -2,9 +2,9 @@
 #define _TINY_WBETL_H_
 
 static inline int 
-stm_wbetl_validate(stm_tx_t *tx)
+stm_wbetl_validate(TYPE stm_tx_t *tx)
 {
-    r_entry_t *r;
+    TYPE r_entry_t *r;
     stm_word_t l;
 
     PRINT_DEBUG("==> stm_wbetl_validate(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
@@ -48,7 +48,7 @@ stm_wbetl_validate(stm_tx_t *tx)
  * Extend snapshot range.
  */
 static inline int 
-stm_wbetl_extend(stm_tx_t *tx)
+stm_wbetl_extend(TYPE stm_tx_t *tx)
 {
     stm_word_t now;
 
@@ -71,9 +71,9 @@ stm_wbetl_extend(stm_tx_t *tx)
 
 
 static inline void 
-stm_wbetl_rollback(stm_tx_t *tx)
+stm_wbetl_rollback(TYPE stm_tx_t *tx)
 {
-    w_entry_t *w;
+    TYPE w_entry_t *w;
     int i;
 
     PRINT_DEBUG("==> stm_wbetl_rollback(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
@@ -103,12 +103,12 @@ stm_wbetl_rollback(stm_tx_t *tx)
  * Load a word-sized value (invisible read).
  */
 static inline stm_word_t 
-stm_wbetl_read_invisible(stm_tx_t *tx, volatile stm_word_t *addr)
+stm_wbetl_read_invisible(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
     volatile stm_word_t *lock;
     stm_word_t l, l2, value, version;
-    r_entry_t *r;
-    w_entry_t *w;
+    TYPE r_entry_t *r;
+    TYPE w_entry_t *w;
 
     PRINT_DEBUG("==> stm_wbetl_read_invisible(t=%p[%lu-%lu],a=%p)\n", tx, 
     			(unsigned long)tx->start, (unsigned long)tx->end, addr);
@@ -127,7 +127,7 @@ restart_no_load:
     {
         /* Locked */
         /* Do we own the lock? */
-        w = (w_entry_t *)LOCK_GET_ADDR(l);
+        w = (TYPE w_entry_t *)LOCK_GET_ADDR(l);
         /* Simply check if address falls inside our write set (avoids non-faulting load) */
         if (tx->w_set.entries <= w && w < tx->w_set.entries + tx->w_set.nb_entries)
         {
@@ -218,20 +218,20 @@ return_value:
 
 
 static inline stm_word_t 
-stm_wbetl_read(stm_tx_t *tx, volatile stm_word_t *addr)
+stm_wbetl_read(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
 
     return stm_wbetl_read_invisible(tx, addr);
 }
 
 
-static inline w_entry_t *
-stm_wbetl_write(stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
+static inline TYPE w_entry_t *
+stm_wbetl_write(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
     volatile stm_word_t *lock;
     stm_word_t l, l1, version;
-    w_entry_t *w;
-    w_entry_t *prev = NULL;
+    TYPE w_entry_t *w;
+    TYPE w_entry_t *prev = NULL;
 
     PRINT_DEBUG("==> stm_wbetl_write(t=%p[%lu-%lu],a=%p,d=%p-%lu,m=0x%lx)\n", tx, 
     			(unsigned long)tx->start, (unsigned long)tx->end, addr, (void *)value, 
@@ -248,7 +248,7 @@ restart_no_load:
     {
         /* Locked */
         /* Do we own the lock? */
-        w = (w_entry_t *)LOCK_GET_ADDR(l);
+        w = (TYPE w_entry_t *)LOCK_GET_ADDR(l);
         /* Simply check if address falls inside our write set (avoids non-faulting load) */
         if (tx->w_set.entries <= w && w < tx->w_set.entries + tx->w_set.nb_entries)
         {
@@ -383,9 +383,9 @@ do_write:
 
 
 static inline int 
-stm_wbetl_commit(stm_tx_t *tx)
+stm_wbetl_commit(TYPE stm_tx_t *tx)
 {
-    w_entry_t *w;
+    TYPE w_entry_t *w;
     stm_word_t t;
     int i;
 
