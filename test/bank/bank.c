@@ -38,10 +38,8 @@ int main()
 {
     struct stm_tx tx;
     int rand, tid;
-    int ra, rb, rc, rd, re, rf, rg, rh;
-    int ri, rj, rl, rm, rn, ro, rp, rq
-    unsigned int a, b, c, d, e, f, g, h;
-    unsigned int i, j, l, m, n, o, p, q;
+    int ra;
+    unsigned int a;
     uint64_t s;
     char buffer[BUFFER_SIZE];
     int idx = 0;
@@ -70,23 +68,6 @@ int main()
 
     for (int i = 0; i < N_TRANSACTIONS; ++i)
     {
-        ra = RAND_R_FNC(s) % N_ACCOUNTS;
-        rb = RAND_R_FNC(s) % N_ACCOUNTS;
-        rc = RAND_R_FNC(s) % N_ACCOUNTS;
-        rd = RAND_R_FNC(s) % N_ACCOUNTS;
-        re = RAND_R_FNC(s) % N_ACCOUNTS;
-        rf = RAND_R_FNC(s) % N_ACCOUNTS;
-        rg = RAND_R_FNC(s) % N_ACCOUNTS;
-        rh = RAND_R_FNC(s) % N_ACCOUNTS;
-
-        ri = RAND_R_FNC(s) % N_ACCOUNTS; 
-        rj = RAND_R_FNC(s) % N_ACCOUNTS; 
-        rl = RAND_R_FNC(s) % N_ACCOUNTS; 
-        rm = RAND_R_FNC(s) % N_ACCOUNTS; 
-        rn = RAND_R_FNC(s) % N_ACCOUNTS; 
-        ro = RAND_R_FNC(s) % N_ACCOUNTS; 
-        rp = RAND_R_FNC(s) % N_ACCOUNTS; 
-        rq = RAND_R_FNC(s) % N_ACCOUNTS;
 
 #ifdef RO_TX
         rand = (RAND_R_FNC(s) % 100) + 1;
@@ -108,70 +89,116 @@ int main()
 #else
         START(&tx);
 
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
         a = LOAD(&tx, &bank[ra], t_aborts, tid);
         a -= TRANSFER;
         STORE(&tx, &bank[ra], a, t_aborts);
 
-        b = LOAD(&tx, &bank[rb], t_aborts, tid);
-        b -= TRANSFER;
-        STORE(&tx, &bank[rb], b, t_aborts);
 
-        c = LOAD(&tx, &bank[rc], t_aborts, tid);
-        c -= TRANSFER;
-        STORE(&tx, &bank[rc], c, t_aborts);
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
 
-        d = LOAD(&tx, &bank[rd], t_aborts, tid);
-        d -= TRANSFER;
-        STORE(&tx, &bank[rd], d, t_aborts);
-
-        e = LOAD(&tx, &bank[re], t_aborts, tid);
-        e -= TRANSFER;
-        STORE(&tx, &bank[re], e, t_aborts);
-
-        f = LOAD(&tx, &bank[rf], t_aborts, tid);
-        f -= TRANSFER;
-        STORE(&tx, &bank[rf], f, t_aborts);
-
-        g = LOAD(&tx, &bank[rg], t_aborts, tid);
-        g -= TRANSFER;
-        STORE(&tx, &bank[rg], g, t_aborts);
-
-        h = LOAD(&tx, &bank[rh], t_aborts, tid);
-        h -= TRANSFER;
-        STORE(&tx, &bank[rh], h, t_aborts);
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a -= TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
 
 
-        i = LOAD(&tx, &bank[ri], t_aborts, tid);
-        i += TRANSFER;
-        STORE(&tx, &bank[ri], i, t_aborts);
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
 
-        j = LOAD(&tx, &bank[rj], t_aborts, tid);
-        j += TRANSFER;
-        STORE(&tx, &bank[rj], j, t_aborts);
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a -= TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
 
-        l = LOAD(&tx, &bank[rl], t_aborts, tid);
-        l += TRANSFER;
-        STORE(&tx, &bank[rl], l, t_aborts);
 
-        m = LOAD(&tx, &bank[rm], t_aborts, tid);
-        m += TRANSFER;
-        STORE(&tx, &bank[rm], m, t_aborts);
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
 
-        n = LOAD(&tx, &bank[rn], t_aborts, tid);
-        n += TRANSFER;
-        STORE(&tx, &bank[rn], n, t_aborts);
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a -= TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
 
-        o = LOAD(&tx, &bank[ro], t_aborts, tid);
-        o += TRANSFER;
-        STORE(&tx, &bank[ro], o, t_aborts);
 
-        p = LOAD(&tx, &bank[rp], t_aborts, tid);
-        p += TRANSFER;
-        STORE(&tx, &bank[rp], p, t_aborts);
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
 
-        q = LOAD(&tx, &bank[rq], t_aborts, tid);
-        q += TRANSFER;
-        STORE(&tx, &bank[rq], q, t_aborts);
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a -= TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a -= TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a -= TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a -= TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a += TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a += TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a += TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a += TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a += TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a += TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a += TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a += TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
 
         COMMIT(&tx, t_aborts);
 #endif
