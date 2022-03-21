@@ -100,7 +100,7 @@ int main()
         COMMIT(&tx, t_aborts);
 #endif
 
-#if defined(RO_TX) && defined(TX_IN_MRAM)
+#if defined(RO_TX)
         if (rc <= 10)
         {
             START(&(tx_mram[tid]));
