@@ -37,8 +37,9 @@ struct stm_tx __mram_noinit tx_mram[NR_TASKLETS];
 int main()
 {
     struct stm_tx tx;
-    int ra, rb, rc, tid;
-    unsigned int a, b;
+    int rand, tid;
+    int ra, rb, rc, rd;
+    unsigned int a, b, c, d;
     uint64_t s;
     char buffer[BUFFER_SIZE];
     int idx = 0;
@@ -70,7 +71,7 @@ int main()
         ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
 #ifdef RO_TX
-        rc = (RAND_R_FNC(s) % 100) + 1;
+        rand = (RAND_R_FNC(s) % 100) + 1;
 #endif
 
       
@@ -94,14 +95,22 @@ int main()
         STORE(&tx, &bank[ra], a, t_aborts);
 
         b = LOAD(&tx, &bank[rb], t_aborts, tid);
-        b += TRANSFER;
+        b -= TRANSFER;
         STORE(&tx, &bank[rb], b, t_aborts);
+
+        c = LOAD(&tx, &bank[rc], t_aborts, tid);
+        c += TRANSFER;
+        STORE(&tx, &bank[rc], c, t_aborts);
+
+        d = LOAD(&tx, &bank[rd], t_aborts, tid);
+        d += TRANSFER;
+        STORE(&tx, &bank[rd], d, t_aborts);
 
         COMMIT(&tx, t_aborts);
 #endif
 
 #if defined(RO_TX)
-        if (rc <= 10)
+        if (rand <= 10)
         {
             START(&(tx_mram[tid]));
 
