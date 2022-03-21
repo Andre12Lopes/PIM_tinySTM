@@ -246,7 +246,7 @@ int_stm_prepare(TYPE stm_tx_t *tx)
     tx->w_set.size = 2;
     tx->r_set.size = 2;
 
-    // tx->read_only = 0;
+    tx->read_only = 0;
 
     // start:
     /* Start timestamp */

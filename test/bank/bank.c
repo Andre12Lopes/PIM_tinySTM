@@ -70,6 +70,8 @@ int main()
     {
         ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
+        rc = RAND_R_FNC(s) % N_ACCOUNTS;
+        rd = RAND_R_FNC(s) % N_ACCOUNTS;
 #ifdef RO_TX
         rand = (RAND_R_FNC(s) % 100) + 1;
 #endif
