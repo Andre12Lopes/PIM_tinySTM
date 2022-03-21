@@ -69,7 +69,7 @@ typedef struct r_entry
 
 typedef struct r_set
 {                            /* Read set */   /* Array of entries */
-    r_entry_t entries[4];  /* Array of entries */
+    r_entry_t entries[8];  /* Array of entries */
     unsigned int nb_entries; /* Number of entries */
     unsigned int size;       /* Size of array */
 } r_set_t;
@@ -90,7 +90,7 @@ typedef struct w_entry
 
 typedef struct w_set
 {                               /* Write set */     /* Array of entries */
-    w_entry_t entries[4];       /* Array of entries */
+    w_entry_t entries[8];       /* Array of entries */
     unsigned int nb_entries;    /* Number of entries */
     unsigned int size;          /* Size of array */
     unsigned int has_writes;
@@ -243,8 +243,8 @@ int_stm_prepare(TYPE stm_tx_t *tx)
     tx->w_set.nb_entries = 0;
     tx->r_set.nb_entries = 0;
 
-    tx->w_set.size = 4;
-    tx->r_set.size = 4;
+    tx->w_set.size = 8;
+    tx->r_set.size = 8;
 
     tx->read_only = 0;
 

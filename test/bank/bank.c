@@ -38,8 +38,8 @@ int main()
 {
     struct stm_tx tx;
     int rand, tid;
-    int ra, rb, rc, rd;
-    unsigned int a, b, c, d;
+    int ra, rb, rc, rd, re, rf, rg, rh;
+    unsigned int a, b, c, d, e, f, g, h;
     uint64_t s;
     char buffer[BUFFER_SIZE];
     int idx = 0;
@@ -72,6 +72,10 @@ int main()
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
         rc = RAND_R_FNC(s) % N_ACCOUNTS;
         rd = RAND_R_FNC(s) % N_ACCOUNTS;
+        re = RAND_R_FNC(s) % N_ACCOUNTS;
+        rf = RAND_R_FNC(s) % N_ACCOUNTS;
+        rg = RAND_R_FNC(s) % N_ACCOUNTS;
+        rh = RAND_R_FNC(s) % N_ACCOUNTS;
 #ifdef RO_TX
         rand = (RAND_R_FNC(s) % 100) + 1;
 #endif
@@ -101,12 +105,28 @@ int main()
         STORE(&tx, &bank[rb], b, t_aborts);
 
         c = LOAD(&tx, &bank[rc], t_aborts, tid);
-        c += TRANSFER;
+        c -= TRANSFER;
         STORE(&tx, &bank[rc], c, t_aborts);
 
         d = LOAD(&tx, &bank[rd], t_aborts, tid);
-        d += TRANSFER;
+        d -= TRANSFER;
         STORE(&tx, &bank[rd], d, t_aborts);
+
+        e = LOAD(&tx, &bank[re], t_aborts, tid);
+        e += TRANSFER;
+        STORE(&tx, &bank[re], e, t_aborts);
+
+        f = LOAD(&tx, &bank[rf], t_aborts, tid);
+        f += TRANSFER;
+        STORE(&tx, &bank[rf], f, t_aborts);
+
+        g = LOAD(&tx, &bank[rg], t_aborts, tid);
+        g += TRANSFER;
+        STORE(&tx, &bank[rg], g, t_aborts);
+
+        h = LOAD(&tx, &bank[rh], t_aborts, tid);
+        h += TRANSFER;
+        STORE(&tx, &bank[rh], h, t_aborts);
 
         COMMIT(&tx, t_aborts);
 #endif
