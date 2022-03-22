@@ -257,11 +257,6 @@ int_stm_prepare(TYPE stm_tx_t *tx)
     {
     }
 
-    if (tx->read_only != 0)
-    {
-        printf("OLA");
-    }
-
     // if (tx->start >= VERSION_MAX)
     // {
     //     /* Block all transactions and reset clock
