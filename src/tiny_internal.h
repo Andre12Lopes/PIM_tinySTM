@@ -69,7 +69,7 @@ typedef struct r_entry
 
 typedef struct r_set
 {                            /* Read set */   /* Array of entries */
-    r_entry_t entries[16];  /* Array of entries */
+    r_entry_t entries[800];  /* Array of entries */
     unsigned int nb_entries; /* Number of entries */
     unsigned int size;       /* Size of array */
 } r_set_t;
@@ -90,7 +90,7 @@ typedef struct w_entry
 
 typedef struct w_set
 {                               /* Write set */     /* Array of entries */
-    w_entry_t entries[16];       /* Array of entries */
+    w_entry_t entries[2];       /* Array of entries */
     unsigned int nb_entries;    /* Number of entries */
     unsigned int size;          /* Size of array */
     unsigned int has_writes;
@@ -152,19 +152,21 @@ stm_has_read(TYPE stm_tx_t *tx, volatile stm_word_t *lock)
 static inline TYPE w_entry_t *
 stm_has_written(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 {
-  TYPE w_entry_t *w;
+    TYPE w_entry_t *w;
 
-  PRINT_DEBUG("==> stm_has_written(%p[%lu-%lu],%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, addr);
+    PRINT_DEBUG("==> stm_has_written(%p[%lu-%lu],%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, addr);
 
-  /* Look for write */
-  w = tx->w_set.entries;
-  for (int i = tx->w_set.nb_entries; i > 0; i--, w++) {
-    if (w->addr == addr) {
-      return w;
+    /* Look for write */
+    w = tx->w_set.entries;
+    for (int i = tx->w_set.nb_entries; i > 0; i--, w++)
+    {
+        if (w->addr == addr)
+        {
+            return w;
+        }
     }
-  }
 
-  return NULL;
+    return NULL;
 }
 
 // TODO change alocation to DPU
@@ -185,8 +187,8 @@ stm_allocate_rs_entries(TYPE stm_tx_t *tx, int extend)
     //     tx->r_set.entries = (r_entry_t *)xmalloc_aligned(tx->r_set.size * sizeof(r_entry_t));
     // }
 
-    printf("[Warning!] Reached allocation function, aborting\n");
-    exit(1);
+    printf("[Warning!] Reached RS allocation function, aborting\n");
+    assert(0);
 }
 
 
@@ -214,8 +216,8 @@ stm_allocate_ws_entries(TYPE stm_tx_t *tx, int extend)
     // /* Ensure that memory is aligned. */
     // assert((((stm_word_t)tx->w_set.entries) & OWNED_MASK) == 0);
 
-    printf("[Warning!] Reached allocation function, aborting\n");
-    exit(1);
+    printf("[Warning!] Reached WS allocation function, aborting\n");
+    assert(0);
 }
 
 #ifdef WRITE_BACK_CTL
@@ -243,8 +245,8 @@ int_stm_prepare(TYPE stm_tx_t *tx)
     tx->w_set.nb_entries = 0;
     tx->r_set.nb_entries = 0;
 
-    tx->w_set.size = 16;
-    tx->r_set.size = 16;
+    tx->w_set.size = 2;
+    tx->r_set.size = 800;
 
     tx->read_only = 0;
 
@@ -253,6 +255,11 @@ int_stm_prepare(TYPE stm_tx_t *tx)
     tx->start = tx->end = GET_CLOCK; /* OPT: Could be delayed until first read/write */
     if (tx->start == 0)
     {
+    }
+
+    if (tx->read_only != 0)
+    {
+        printf("OLA");
     }
 
     // if (tx->start >= VERSION_MAX)

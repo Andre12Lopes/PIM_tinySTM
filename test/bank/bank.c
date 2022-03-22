@@ -16,7 +16,7 @@
 #define TRANSFER 2
 #define N_ACCOUNTS 800
 #define ACCOUNT_V 1000
-#define N_TRANSACTIONS 1000
+#define N_TRANSACTIONS 1
 
 BARRIER_INIT(my_barrier, NR_TASKLETS);
 
@@ -36,12 +36,12 @@ struct stm_tx __mram_noinit tx_mram[NR_TASKLETS];
 
 int main()
 {
-    struct stm_tx tx;
+    stm_tx_t tx;
     int rand, tid;
-    int ra;
-    unsigned int a;
+    int ra, rb;
+    unsigned int a, b;
     uint64_t s;
-    char buffer[BUFFER_SIZE];
+    // char buffer[BUFFER_SIZE];
     int idx = 0;
     int t;
     perfcounter_t initial_time;
@@ -55,7 +55,7 @@ int main()
 
     barrier_wait(&my_barrier);
 
-    if (me() == 0)
+    if (tid == 0)
     {
         n_trans = N_TRANSACTIONS * NR_TASKLETS;
         n_tasklets = NR_TASKLETS;
@@ -68,7 +68,8 @@ int main()
 
     for (int i = 0; i < N_TRANSACTIONS; ++i)
     {
-
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+        rb = RAND_R_FNC(s) % N_ACCOUNTS;
 #ifdef RO_TX
         rand = (RAND_R_FNC(s) % 100) + 1;
 #endif

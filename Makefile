@@ -38,11 +38,11 @@ CFLAGS += -Wall -Wextra -Wno-unused-label -Wno-unused-function
 
 CPPFLAGS += -I$(SRCDIR)
 
-# DEFINES += -DTX_IN_MRAM
+DEFINES += -DTX_IN_MRAM
 
-DEFINES += -DWRITE_BACK_CTL
+# DEFINES += -DWRITE_BACK_CTL
 # DEFINES += -DWRITE_BACK_ETL
-# DEFINES += -DWRITE_THROUGH_ETL
+DEFINES += -DWRITE_THROUGH_ETL
 
 .PHONY:	all test clean
 
@@ -52,7 +52,7 @@ all: $(TMLIB)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 # Additional dependencies
-$(SRCDIR)/tiny.o: $(SRCDIR)/tiny.h $(SRCDIR)/tiny_internal.h $(SRCDIR)/tiny_wtetl.h $(SRCDIR)/utils.h $(SRCDIR)/atomic.h
+$(SRCDIR)/tiny.o: $(SRCDIR)/tiny.h $(SRCDIR)/tiny_internal.h $(SRCDIR)/tiny_wtetl.h $(SRCDIR)/tiny_wbetl.h $(SRCDIR)/tiny_wbctl.h $(SRCDIR)/utils.h $(SRCDIR)/atomic.h
 
 
 $(TMLIB): $(SRCDIR)/$(TM).o
