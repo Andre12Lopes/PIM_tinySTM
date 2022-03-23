@@ -23,7 +23,7 @@ def process(file, num_threads, num_runs):
 
 	for run in data:
 		time[int(run[0]) - 1].append(float(run[2]))
-		aborts[int(run[0]) - 1].append(int(run[3]))
+		aborts[int(run[0]) - 1].append(float(run[3]))
 
 	f = open(f'{file}_processed', 'w')
 	f.write(f'N_THREADS\tN_TRANSACTIONS\tAVG_TIME\tSTDEV_TIME\tAVG_ABORTS\tSTDEV_ABORTS\n')
