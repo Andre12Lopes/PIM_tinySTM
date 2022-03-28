@@ -38,7 +38,7 @@ int main()
 {
     stm_tx_t tx;
     int rand, tid;
-    int ra, rb;
+    int ra, rb, rc;
     unsigned int a, b;
     uint64_t s;
     // char buffer[BUFFER_SIZE];
@@ -68,7 +68,7 @@ int main()
 
     for (int i = 0; i < N_TRANSACTIONS; ++i)
     {
-        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+        // ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
 #ifdef RO_TX
         rc = (RAND_R_FNC(s) % 100) + 1;
@@ -78,13 +78,32 @@ int main()
 #ifdef TX_IN_MRAM
         START(&(tx_mram[tid]));
 
-        a = LOAD(&(tx_mram[tid]), &bank[ra], t_aborts, tid);
-        a -= TRANSFER;
-        STORE(&(tx_mram[tid]), &bank[ra], a, t_aborts);
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
 
-        b = LOAD(&(tx_mram[tid]), &bank[rb], t_aborts, tid);
-        b += TRANSFER;
-        STORE(&(tx_mram[tid]), &bank[rb], b, t_aborts);
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a -= TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a -= TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a += TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
+
+
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
+
+        a = LOAD(&tx, &bank[ra], t_aborts, tid);
+        a += TRANSFER;
+        STORE(&tx, &bank[ra], a, t_aborts);
 
         COMMIT(&(tx_mram[tid]), t_aborts);
 #else
