@@ -90,32 +90,13 @@ int main()
 #else
         START(&tx);
 
-        ra = RAND_R_FNC(s) % N_ACCOUNTS;
-
         a = LOAD(&tx, &bank[ra], t_aborts, tid);
         a -= TRANSFER;
         STORE(&tx, &bank[ra], a, t_aborts);
 
-
-        ra = RAND_R_FNC(s) % N_ACCOUNTS;
-
-        a = LOAD(&tx, &bank[ra], t_aborts, tid);
-        a -= TRANSFER;
-        STORE(&tx, &bank[ra], a, t_aborts);
-
-
-        ra = RAND_R_FNC(s) % N_ACCOUNTS;
-
-        a = LOAD(&tx, &bank[ra], t_aborts, tid);
-        a += TRANSFER;
-        STORE(&tx, &bank[ra], a, t_aborts);
-
-
-        ra = RAND_R_FNC(s) % N_ACCOUNTS;
-
-        a = LOAD(&tx, &bank[ra], t_aborts, tid);
-        a += TRANSFER;
-        STORE(&tx, &bank[ra], a, t_aborts);
+        b = LOAD(&tx, &bank[rb], t_aborts, tid);
+        b += TRANSFER;
+        STORE(&tx, &bank[rb], b, t_aborts);
 
         COMMIT(&tx, t_aborts);
 #endif
