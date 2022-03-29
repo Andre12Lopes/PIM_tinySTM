@@ -51,6 +51,12 @@ int main()
     tid = me();
     // buddy_init(4096);
 
+#ifdef TX_IN_MRAM
+    tx_mram[tid].TID = tid;
+#else
+    tx.TID = tid;
+#endif
+
     initialize_accounts();
 
     barrier_wait(&my_barrier);
