@@ -21,3 +21,4 @@ results_*
 acc
 contention
 read_only
+lock_table_size

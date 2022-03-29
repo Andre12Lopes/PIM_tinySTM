@@ -68,7 +68,7 @@ int main()
 
     for (int i = 0; i < N_TRANSACTIONS; ++i)
     {
-        // ra = RAND_R_FNC(s) % N_ACCOUNTS;
+        ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
 #ifdef RO_TX
         rc = (RAND_R_FNC(s) % 100) + 1;
