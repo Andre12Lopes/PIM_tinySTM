@@ -11,6 +11,9 @@ int main(void)
     std::vector<std::vector<uint32_t>> nTransactions(1);
     std::vector<std::vector<uint32_t>> nThreads(1);
 
+    std::vector<std::vector<uint32_t>> nbProcessCycles(1);
+    std::vector<std::vector<uint32_t>> nbCommitCycles(1);
+
     try
     {
         auto dpu = DpuSet::allocate(1);
@@ -33,12 +36,22 @@ int main(void)
         nThreads.front().resize(1);
         dpu.copy(nThreads, "n_tasklets");
 
+        nbProcessCycles.front().resize(1);
+        dpu.copy(nbProcessCycles, "nb_process_cycles");
+
+        nbCommitCycles.front().resize(1);
+        dpu.copy(nbCommitCycles, "nb_commit_cycles");
+
         double time = (double) nbCycles.front().front() / clocksPerSec.front().front();
+
+        double process_time = (double) nbProcessCycles.front().front() / clocksPerSec.front().front();
+        double commit_time = (double) nbCommitCycles.front().front() / clocksPerSec.front().front();
+
         long aborts = nAborts.front().front();
 
         // std::cout << "N threads" <<
-        std::cout << (double) nThreads.front().front() <<  "\t" << nTransactions.front().front() << "\t" << time << "\t" << ((double) aborts * 100) / (aborts + nTransactions.front().front()) << std::endl;
-
+        std::cout << (double) nThreads.front().front() <<  "\t" << nTransactions.front().front() << "\t" << time << "\t" << ((double) aborts * 100) / (aborts + nTransactions.front().front()) << "\t" << process_time << "\t" << commit_time << std::endl;
+        
         // std::cout << "Tx/s = " << (double)nTransactions.front().front() / time << std::endl;
         // std::cout << "Abort rate = " << ((double) nAborts.front().front() * 100) / nTransactions.front().front() << std::endl;
 

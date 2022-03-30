@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <perfcounter.h>
 
 #include "tiny.h"
 #include "tiny_internal.h"

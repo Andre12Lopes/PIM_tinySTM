@@ -21,6 +21,8 @@
 BARRIER_INIT(my_barrier, NR_TASKLETS);
 
 __host uint32_t nb_cycles;
+__host uint32_t nb_process_cycles;
+__host uint32_t nb_commit_cycles;
 __host uint32_t n_aborts;
 __host uint32_t n_trans;
 __host uint32_t n_tasklets;
@@ -138,6 +140,9 @@ int main()
     if (me() == 0)
     {
         nb_cycles = perfcounter_get() - initial_time;
+
+        nb_process_cycles = 0;
+        nb_commit_cycles = 0;
     }
 
     for (int i = 0; i < NR_TASKLETS; ++i)
@@ -145,6 +150,9 @@ int main()
         if (me() == i)
         {
             n_aborts += t_aborts;
+
+            nb_process_cycles += tx.process_cycles;
+            nb_commit_cycles += tx.commit_cycles;
         }
 
         barrier_wait(&my_barrier);

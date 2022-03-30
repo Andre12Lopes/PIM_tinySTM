@@ -16,7 +16,7 @@ test/bank/transaction.history
 
 test/benchmark/launch
 
-results_*
+results*
 
 acc
 contention

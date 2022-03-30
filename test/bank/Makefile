@@ -15,7 +15,7 @@ CFLAGS += -Wall -Wno-unused-label -Wno-unused-function -std=c11
 LDFLAGS += -L$(LIBDIR) -l$(TM)
 CPPFLAGS += -I$(SRCDIR)
 
-DEFINES += -DTX_IN_MRAM
+# DEFINES += -DTX_IN_MRAM
 # DEFINES += -DRO_TX
 
 .PHONY:	all clean

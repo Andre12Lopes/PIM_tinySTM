@@ -109,6 +109,9 @@ typedef struct stm_tx
     // unsigned int nesting;       /* Nesting level */
     unsigned int read_only;
     unsigned long long TID;
+    perfcounter_t transaction_start;
+    uint32_t process_cycles;
+    uint32_t commit_cycles;
 } stm_tx_t;
 
 
@@ -233,49 +236,49 @@ stm_allocate_ws_entries(TYPE stm_tx_t *tx, int extend)
 #include "tiny_wtetl.h"
 #endif
 
-static inline unsigned long long 
-MarsagliaXORV(unsigned long long x)
-{
-    if (x == 0)
-    {
-        x = 1;
-    }
+// static inline unsigned long long 
+// MarsagliaXORV(unsigned long long x)
+// {
+//     if (x == 0)
+//     {
+//         x = 1;
+//     }
 
-    x ^= x << 6;
-    x ^= x >> 21;
-    x ^= x << 7;
+//     x ^= x << 6;
+//     x ^= x >> 21;
+//     x ^= x << 7;
 
-    return x;
-}
+//     return x;
+// }
 
-static inline unsigned long long 
-MarsagliaXOR(TYPE unsigned long long *seed)
-{
-    unsigned long long x = MarsagliaXORV(*seed);
-    *seed = x;
+// static inline unsigned long long 
+// MarsagliaXOR(TYPE unsigned long long *seed)
+// {
+//     unsigned long long x = MarsagliaXORV(*seed);
+//     *seed = x;
 
-    return x;
-}
+//     return x;
+// }
 
-static inline unsigned long long 
-TSRandom(TYPE stm_tx_t *tx)
-{
-    return MarsagliaXOR(&tx->TID);
-}
+// static inline unsigned long long 
+// TSRandom(TYPE stm_tx_t *tx)
+// {
+//     return MarsagliaXOR(&tx->TID);
+// }
 
-static inline void 
-backoff(TYPE stm_tx_t *tx)
-{
-    unsigned long long stall = TSRandom(tx) & 0xF;
-    // stall += attempt >> 2;
-    stall *= 10;
-    /* CCM: timer function may misbehave */
-    unsigned long long i = 0;
-    while (i++ < stall)
-    {
+// static inline void 
+// backoff(TYPE stm_tx_t *tx)
+// {
+//     unsigned long long stall = TSRandom(tx) & 0xF;
+//     // stall += attempt >> 2;
+//     stall *= 10;
+//     /* CCM: timer function may misbehave */
+//     unsigned long long i = 0;
+//     while (i++ < stall)
+//     {
         
-    }
-}
+//     }
+// }
 
 /*
  * Initialize the transaction descriptor before start or restart.
@@ -309,7 +312,7 @@ int_stm_prepare(TYPE stm_tx_t *tx)
     //     goto start;
     // }
 
-    backoff(tx);
+    // backoff(tx);
 
     /* Set status */
     UPDATE_STATUS(tx->status, TX_ACTIVE);
@@ -331,6 +334,8 @@ int_stm_start(TYPE stm_tx_t *tx)
 
     /* Initialize transaction descriptor */
     int_stm_prepare(tx);
+
+    tx->transaction_start = perfcounter_config(COUNT_CYCLES, false);
 }
 
 /*
@@ -408,6 +413,9 @@ int_stm_commit(TYPE stm_tx_t *tx)
 
     assert(IS_ACTIVE(tx->status));
 
+    tx->process_cycles += perfcounter_get() - tx->transaction_start;
+    tx->transaction_start = perfcounter_config(COUNT_CYCLES, false);
+
     /* A read-only transaction can commit immediately */
     if (tx->w_set.nb_entries != 0)
     {
@@ -427,6 +435,7 @@ int_stm_commit(TYPE stm_tx_t *tx)
 
     /* Set status to COMMITTED */
     SET_STATUS(tx->status, TX_COMMITTED);
+    tx->commit_cycles += perfcounter_get() - tx->transaction_start;
 
     return 1;
 }
