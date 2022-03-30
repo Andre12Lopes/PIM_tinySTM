@@ -57,6 +57,9 @@ int main()
     tx_mram[tid].TID = tid;
 #else
     tx.TID = tid;
+
+    tx.process_cycles = 0;
+    tx.commit_cycles = 0;
 #endif
 
     initialize_accounts();
