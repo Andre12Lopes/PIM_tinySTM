@@ -64,10 +64,12 @@ int main()
     tx_mram[tid].TID = tid;
     tx_mram[tid].process_cycles = 0;
     tx_mram[tid].commit_cycles = 0;
+    tx_mram[tid].total_cycles = 0;
 #else
     tx.TID = tid;
     tx.process_cycles = 0;
     tx.commit_cycles = 0;
+    tx.total_cycles = 0;
 #endif
 
     initialize_accounts();

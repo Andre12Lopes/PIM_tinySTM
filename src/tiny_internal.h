@@ -450,7 +450,7 @@ int_stm_commit(TYPE stm_tx_t *tx)
     SET_STATUS(tx->status, TX_COMMITTED);
 
     tx->commit_cycles += perfcounter_get() - tx->time;
-    tx->total_cycles = perfcounter_get() - tx->start_time;
+    tx->total_cycles += perfcounter_get() - tx->start_time;
 
     return 1;
 }
