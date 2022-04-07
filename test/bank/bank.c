@@ -177,12 +177,12 @@ int main()
 
 #ifdef TX_IN_MRAM
             nb_process_cycles += ((double) tx_mram[tid].process_cycles / (N_TRANSACTIONS * NR_TASKLETS));
-            nb_commit_cycles += (tx_mram[tid].commit_cycles / (N_TRANSACTIONS * NR_TASKLETS));
-            nb_wasted_cycles += ((tx_mram[tid].total_cycles - (tx_mram[tid].process_cycles + tx_mram[tid].commit_cycles)) / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_commit_cycles += ((double) tx_mram[tid].commit_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_wasted_cycles += ((double) (tx_mram[tid].total_cycles - (tx_mram[tid].process_cycles + tx_mram[tid].commit_cycles)) / (N_TRANSACTIONS * NR_TASKLETS));
 #else
-            nb_process_cycles += (tx.process_cycles / (N_TRANSACTIONS * NR_TASKLETS));
-            nb_commit_cycles += (tx.commit_cycles / (N_TRANSACTIONS * NR_TASKLETS));
-            nb_wasted_cycles += ((tx.total_cycles - (tx.process_cycles + tx.commit_cycles)) / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_process_cycles += ((double) tx.process_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_commit_cycles += ((double) tx.commit_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_wasted_cycles += ((double) (tx.total_cycles - (tx.process_cycles + tx.commit_cycles)) / (N_TRANSACTIONS * NR_TASKLETS));
 #endif
         }
 
