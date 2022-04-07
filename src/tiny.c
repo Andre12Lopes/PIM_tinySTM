@@ -31,13 +31,13 @@ stm_start(TYPE stm_tx_t *tx)
 }
 
 stm_word_t 
-stm_load(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
+stm_load(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
 {
     return int_stm_load(tx, addr);
 }
 
 void 
-stm_store(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value)
+stm_store(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t value)
 {
     int_stm_store(tx, addr, value);
 }

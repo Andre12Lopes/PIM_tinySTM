@@ -9,6 +9,12 @@
 #define TYPE
 #endif
 
+#ifdef ACC_IN_MRAM
+#define TYPE_ACC __mram_ptr
+#else
+#define TYPE_ACC
+#endif
+
 struct stm_tx;
 
 typedef uintptr_t stm_word_t;
@@ -49,9 +55,9 @@ void stm_start(TYPE struct stm_tx *tx);
 
 /* TODO: Read does not deal well with floating point operations */
 /* TODO: Change return type */
-stm_word_t stm_load(TYPE struct stm_tx *tx, volatile stm_word_t *addr);
+stm_word_t stm_load(TYPE struct stm_tx *tx, volatile TYPE_ACC stm_word_t *addr);
 
-void stm_store(TYPE struct stm_tx *tx, volatile stm_word_t *addr, stm_word_t value);
+void stm_store(TYPE struct stm_tx *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t value);
 
 int stm_commit(TYPE struct stm_tx *tx);
 

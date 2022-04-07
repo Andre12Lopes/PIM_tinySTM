@@ -22,6 +22,8 @@
 static inline void *
 xrealloc(void *addr, size_t size)
 {
+    (void) addr;
+    (void) size;
     // addr = realloc(addr, size);
     // if (addr == NULL)
     // {
@@ -35,6 +37,7 @@ xrealloc(void *addr, size_t size)
 static inline void *
 xmalloc_aligned(size_t size)
 {
+    (void) size;
     // void *memptr;
 
     // if (posix_memalign(&memptr, CACHELINE_SIZE, size))

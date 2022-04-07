@@ -2,8 +2,10 @@
 #define _ATOMIC_H_
 
 #define ATOMIC_LOAD_ACQ(a) (AO_load_read((volatile size_t *)(a)))
-#define ATOMIC_LOAD(a) (*((volatile size_t *)(a)))
+// #define ATOMIC_LOAD(a) (*((volatile size_t *)(a)))
+#define ATOMIC_LOAD(a) (*a)
 #define ATOMIC_STORE(a, v) (*((volatile size_t *)(a)) = (size_t)(v))
+#define ATOMIC_STORE_VALUE(a, v) (*((volatile TYPE_ACC size_t *)(a)) = (size_t)(v))
 #define ATOMIC_STORE_REL(a, v) (AO_store_write((volatile size_t *)(a), (size_t)(v)))
 
 #define ATOMIC_FETCH_INC_FULL(a, v) (AO_int_fetch_and_add_full((volatile size_t *)(a), v))

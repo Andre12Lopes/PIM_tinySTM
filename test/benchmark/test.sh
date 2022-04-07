@@ -1,9 +1,9 @@
 #!/bin/bash
-echo -e "N_THREADS\tN_TRANSACTIONS\tTIME\tN_ABORTS\tPROCESS_TIME\tCOMMIT_TIME" > results.txt
+echo -e "N_THREADS\tN_TRANSACTIONS\tTIME\tN_ABORTS\tPROCESS_TIME\tCOMMIT_TIME\tWASTED_TIME" > results.txt
 
 make
 
-for (( i = 1; i < 13; i++ )); do
+for (( i = 1; i < 25; i++ )); do
 	cd ../bank
 	make clean
 	make NR_TASKLETS=$i

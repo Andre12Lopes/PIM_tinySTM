@@ -68,23 +68,23 @@ typedef struct r_entry
 } r_entry_t;
 
 typedef struct r_set
-{                            /* Read set */   /* Array of entries */
-    r_entry_t entries[2];  /* Array of entries */
-    unsigned int nb_entries; /* Number of entries */
-    unsigned int size;       /* Size of array */
+{                               /* Read set */   /* Array of entries */
+    r_entry_t entries[2];       /* Array of entries */
+    unsigned int nb_entries;    /* Number of entries */
+    unsigned int size;          /* Size of array */
 } r_set_t;
 
 typedef struct w_entry
 {           /* Write set entry */
     struct
     {
-        volatile stm_word_t *addr;         /* Address written */
-        stm_word_t value;                  /* New (write-back) or old (write-through) value */
-        stm_word_t mask;                   /* Write mask */
-        stm_word_t version;                /* Version overwritten */
-        volatile stm_word_t *lock; /* Pointer to lock (for fast access) */
-        TYPE struct w_entry *next;     /* WRITE_BACK_ETL || WRITE_THROUGH: Next address covered by same lock (if any) */
-        stm_word_t no_drop;            /* WRITE_BACK_CTL: Should we drop lock upon abort? */
+        volatile TYPE_ACC stm_word_t *addr;   /* Address written */
+        stm_word_t value;                       /* New (write-back) or old (write-through) value */
+        stm_word_t mask;                        /* Write mask */
+        stm_word_t version;                     /* Version overwritten */
+        volatile stm_word_t *lock;              /* Pointer to lock (for fast access) */
+        TYPE struct w_entry *next;              /* WRITE_BACK_ETL || WRITE_THROUGH: Next address covered by same lock (if any) */
+        stm_word_t no_drop;                     /* WRITE_BACK_CTL: Should we drop lock upon abort? */
     };
 } w_entry_t __attribute__((aligned(16)));
 
@@ -106,12 +106,14 @@ typedef struct stm_tx
     stm_word_t end;             /* End timestamp (validity range) */
     r_set_t r_set;              /* Read set */
     w_set_t w_set;              /* Write set */
-    // unsigned int nesting;       /* Nesting level */
+    // unsigned int nesting;    /* Nesting level */
     unsigned int read_only;
-    unsigned long long TID;
-    perfcounter_t transaction_start;
+    unsigned int TID;
+    perfcounter_t time;
+    perfcounter_t start_time;
     uint32_t process_cycles;
     uint32_t commit_cycles;
+    uint32_t total_cycles;
 } stm_tx_t;
 
 
@@ -154,7 +156,7 @@ stm_has_read(TYPE stm_tx_t *tx, volatile stm_word_t *lock)
  * Check if address has been written previously.
  */
 static inline TYPE w_entry_t *
-stm_has_written(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
+stm_has_written(TYPE stm_tx_t *tx, volatile __mram_ptr stm_word_t *addr)
 {
     TYPE w_entry_t *w;
 
@@ -177,6 +179,9 @@ stm_has_written(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 static void 
 stm_allocate_rs_entries(TYPE stm_tx_t *tx, int extend)
 {
+    (void) tx;
+    (void) extend;
+
     PRINT_DEBUG("==> stm_allocate_rs_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end,
                 extend);
 
@@ -202,6 +207,9 @@ stm_allocate_rs_entries(TYPE stm_tx_t *tx, int extend)
 static void 
 stm_allocate_ws_entries(TYPE stm_tx_t *tx, int extend)
 {
+    (void) tx;
+    (void) extend;
+
     PRINT_DEBUG("==> stm_allocate_ws_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end,
                 extend);
 
@@ -335,7 +343,8 @@ int_stm_start(TYPE stm_tx_t *tx)
     /* Initialize transaction descriptor */
     int_stm_prepare(tx);
 
-    tx->transaction_start = perfcounter_config(COUNT_CYCLES, false);
+    tx->time = perfcounter_config(COUNT_CYCLES, false);
+    tx->start_time = perfcounter_config(COUNT_CYCLES, false);
 }
 
 /*
@@ -344,6 +353,8 @@ int_stm_start(TYPE stm_tx_t *tx)
 static void 
 stm_rollback(TYPE stm_tx_t *tx, unsigned int reason)
 {
+    (void) reason;
+
     PRINT_DEBUG("==> stm_rollback(%p[%lu-%lu])\n", tx, 
                 (unsigned long)tx->start, (unsigned long)tx->end);
 
@@ -374,7 +385,7 @@ stm_rollback(TYPE stm_tx_t *tx, unsigned int reason)
 }
 
 static inline stm_word_t 
-int_stm_load(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
+int_stm_load(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
 {
 #if defined(WRITE_BACK_CTL)
     return stm_wbctl_read(tx, addr);
@@ -383,10 +394,12 @@ int_stm_load(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 #elif defined(WRITE_THROUGH_ETL) 
     return stm_wtetl_read(tx, addr);
 #endif
+
+    return -1;
 }
 
 static inline void 
-int_stm_store(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value)
+int_stm_store(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t value)
 {
     PRINT_DEBUG("==> int_stm_store(t=%p[%lu-%lu],a=%p,d=%p-%lu)\n",
                tx, (unsigned long)tx->start, (unsigned long)tx->end, addr, (void *)value, (unsigned long)value);
@@ -413,8 +426,8 @@ int_stm_commit(TYPE stm_tx_t *tx)
 
     assert(IS_ACTIVE(tx->status));
 
-    tx->process_cycles += perfcounter_get() - tx->transaction_start;
-    tx->transaction_start = perfcounter_config(COUNT_CYCLES, false);
+    tx->process_cycles += perfcounter_get() - tx->time;
+    tx->time = perfcounter_config(COUNT_CYCLES, false);
 
     /* A read-only transaction can commit immediately */
     if (tx->w_set.nb_entries != 0)
@@ -435,7 +448,9 @@ int_stm_commit(TYPE stm_tx_t *tx)
 
     /* Set status to COMMITTED */
     SET_STATUS(tx->status, TX_COMMITTED);
-    tx->commit_cycles += perfcounter_get() - tx->transaction_start;
+
+    tx->commit_cycles += perfcounter_get() - tx->time;
+    tx->total_cycles = perfcounter_get() - tx->start_time;
 
     return 1;
 }

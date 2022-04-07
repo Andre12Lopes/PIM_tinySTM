@@ -23,31 +23,38 @@ BARRIER_INIT(my_barrier, NR_TASKLETS);
 __host uint32_t nb_cycles;
 __host uint32_t nb_process_cycles;
 __host uint32_t nb_commit_cycles;
+__host uint32_t nb_wasted_cycles;
 __host uint32_t n_aborts;
 __host uint32_t n_trans;
 __host uint32_t n_tasklets;
 
+#ifdef ACC_IN_MRAM
+unsigned int __mram_noinit bank[N_ACCOUNTS];
+#else
 unsigned int bank[N_ACCOUNTS];
-
-void initialize_accounts();
-void check_total();
+#endif
 
 #ifdef TX_IN_MRAM
 struct stm_tx __mram_noinit tx_mram[NR_TASKLETS];
 #endif
 
+void initialize_accounts();
+void check_total();
+
 int main()
 {
     stm_tx_t tx;
-    int rand, tid;
-    int ra, rb, rc;
+    int tid;
+    int ra, rb;
     unsigned int a, b;
     uint64_t s;
     // char buffer[BUFFER_SIZE];
-    int idx = 0;
-    int t;
     perfcounter_t initial_time;
     uint32_t t_aborts = 0;
+#ifdef RO_TX
+    int rc;
+    int t;
+#endif
 
     s = (uint64_t)me();
     tid = me();
@@ -55,9 +62,10 @@ int main()
 
 #ifdef TX_IN_MRAM
     tx_mram[tid].TID = tid;
+    tx_mram[tid].process_cycles = 0;
+    tx_mram[tid].commit_cycles = 0;
 #else
     tx.TID = tid;
-
     tx.process_cycles = 0;
     tx.commit_cycles = 0;
 #endif
@@ -79,8 +87,20 @@ int main()
 
     for (int i = 0; i < N_TRANSACTIONS; ++i)
     {
+        // if (tid == 0)
+        // {
+        //     ra = RAND_R_FNC(s) % (N_ACCOUNTS / 2);
+        //     rb = RAND_R_FNC(s) % (N_ACCOUNTS / 2);
+        // }
+        // else
+        // {
+        //     ra = (RAND_R_FNC(s) % (N_ACCOUNTS / 2)) + N_ACCOUNTS / 2;
+        //     rb = (RAND_R_FNC(s) % (N_ACCOUNTS / 2)) + N_ACCOUNTS / 2;
+        // }
+
         ra = RAND_R_FNC(s) % N_ACCOUNTS;
         rb = RAND_R_FNC(s) % N_ACCOUNTS;
+        
 #ifdef RO_TX
         rc = (RAND_R_FNC(s) % 100) + 1;
 #endif
@@ -146,6 +166,7 @@ int main()
 
         nb_process_cycles = 0;
         nb_commit_cycles = 0;
+        nb_wasted_cycles = 0;
     }
 
     for (int i = 0; i < NR_TASKLETS; ++i)
@@ -154,8 +175,15 @@ int main()
         {
             n_aborts += t_aborts;
 
-            nb_process_cycles += tx.process_cycles;
-            nb_commit_cycles += tx.commit_cycles;
+#ifdef TX_IN_MRAM
+            nb_process_cycles += ((double) tx_mram[tid].process_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_commit_cycles += (tx_mram[tid].commit_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_wasted_cycles += ((tx_mram[tid].total_cycles - (tx_mram[tid].process_cycles + tx_mram[tid].commit_cycles)) / (N_TRANSACTIONS * NR_TASKLETS));
+#else
+            nb_process_cycles += (tx.process_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_commit_cycles += (tx.commit_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_wasted_cycles += ((tx.total_cycles - (tx.process_cycles + tx.commit_cycles)) / (N_TRANSACTIONS * NR_TASKLETS));
+#endif
         }
 
         barrier_wait(&my_barrier);
@@ -181,14 +209,14 @@ void check_total()
 {
     if (me() == 0)
     {
-        // printf("[");
+        printf("[");
         unsigned int total = 0;
         for (int i = 0; i < N_ACCOUNTS; ++i)
         {
-            // printf("%u,", bank[i]);
+            printf("%u,", bank[i]);
             total += bank[i];
         }
-        // printf("]\n");
+        printf("]\n");
 
         printf("TOTAL = %u\n", total);
 

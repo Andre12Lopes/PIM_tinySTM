@@ -118,7 +118,7 @@ stm_wtetl_rollback(TYPE stm_tx_t *tx)
         /* Restore previous value */
         if (w->mask != 0)
         {
-            ATOMIC_STORE(w->addr, w->value);
+            ATOMIC_STORE_VALUE(w->addr, w->value);
         }
 
         if (w->next != NULL)
@@ -137,21 +137,30 @@ stm_wtetl_rollback(TYPE stm_tx_t *tx)
                 t = FETCH_INC_CLOCK;
             }
 
+            // printf("Timestamp: %u | TID: %llu\n", LOCK_SET_TIMESTAMP(t), tx->TID);
+            // printf("Lock before: %u | TID: %llu\n", *(w->lock), tx->TID);
             ATOMIC_STORE_REL(w->lock, LOCK_SET_TIMESTAMP(t));
+            // printf("Lock after rollback: %u | TID: %llu\n", *(w->lock), tx->TID);
+            // printf("---------------------------------------\n");
         }
         else
         {
             /* Use new incarnation number */
+            // printf("Timestamp: %u | TID: %llu\n", LOCK_SET_TIMESTAMP(t), tx->TID);
+            // printf("Lock before: %u | TID: %llu\n", *(w->lock), tx->TID);
             ATOMIC_STORE_REL(w->lock, LOCK_UPD_INCARNATION(w->version, j));
+            // printf("Lock after rollback: %u | TID: %llu\n", *(w->lock), tx->TID);
+            // printf("---------------------------------------\n");
         }
     }
+    
 
     /* Make sure that all lock releases become visible */
     ATOMIC_B_WRITE;
 }
 
 static inline stm_word_t 
-stm_wtetl_read(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
+stm_wtetl_read(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
 {
     volatile stm_word_t *lock_addr;
     stm_word_t l1, l2, value, version;
@@ -167,7 +176,7 @@ restart_no_load:
     if (!LOCK_GET_WRITE(l1))
     {
         /* Address not locked */
-        value = ATOMIC_LOAD_ACQ(addr);
+        value = ATOMIC_LOAD(addr);
         l2 = ATOMIC_LOAD_ACQ(lock_addr);
 
         if (l1 != l2)
@@ -208,6 +217,7 @@ restart_no_load:
             /* Yes: we have a version locked by us that was valid at write time
              */
             value = ATOMIC_LOAD(addr);
+
             /* No need to add to read set (will remain valid) */
             return value;
         }
@@ -222,7 +232,7 @@ restart_no_load:
 
 
 static inline TYPE w_entry_t *
-stm_wtetl_write(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
+stm_wtetl_write(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
     volatile stm_word_t *lock;
     stm_word_t l, l1, version;
@@ -276,7 +286,7 @@ restart:
                         value = (ATOMIC_LOAD(addr) & ~mask) | (value & mask);
                     }
 
-                    ATOMIC_STORE(addr, value);
+                    ATOMIC_STORE_VALUE(addr, value);
                     return w;
                 }
 
@@ -293,7 +303,6 @@ restart:
             if (tx->w_set.nb_entries == tx->w_set.size)
             {
                 stm_rollback(tx, STM_ABORT_EXTEND_WS);
-                printf("[Warning!] Temporary exit, remove on final version\n");
                 exit(1);
             }
 
@@ -318,6 +327,7 @@ restart:
         {
             /* Read version must be older (otherwise, tx->end >= version) */
             /* Not much we can do: abort */
+            printf("ABB\n");
             stm_rollback(tx, STM_ABORT_VAL_WRITE);
             return NULL;
         }
@@ -326,7 +336,6 @@ restart:
     if (tx->w_set.nb_entries == tx->w_set.size)
     {
         stm_rollback(tx, STM_ABORT_EXTEND_WS);
-        printf("[Warning!] Temporary exit, remove on final version\n");
         exit(1);
     }
 
@@ -342,6 +351,7 @@ restart:
         goto restart;
     }
 
+    // printf("Lock %u | TID: %u\n", LOCK_SET_ADDR_WRITE((stm_word_t)w), tx->TID);
     ATOMIC_STORE(lock, LOCK_SET_ADDR_WRITE((stm_word_t)w));
 
     release(lock);
@@ -355,6 +365,9 @@ do_write:
     w->addr = addr;
     w->mask = mask;
     w->lock = lock;
+
+    // printf("Lock %u | TID: %llu\n", *(w->lock), tx->TID);
+    // printf("Lock value %u | TID: %llu\n", *(lock), tx->TID);
 
     if (mask == 0)
     {
@@ -373,7 +386,7 @@ do_write:
             value = (w->value & ~mask) | (value & mask);
         }
 
-        ATOMIC_STORE(addr, value);
+        ATOMIC_STORE_VALUE(addr, value);
     }
 
     w->next = NULL;
@@ -420,7 +433,11 @@ stm_wtetl_commit(TYPE stm_tx_t *tx)
         {
 
             /* No need for CAS (can only be modified by owner transaction) */
+            // printf("Timestamp: %u | TID: %llu\n", LOCK_SET_TIMESTAMP(t), tx->TID);
+            // printf("Lock before: %u | TID: %llu\n", *(w->lock), tx->TID);
             ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(t));
+            // printf("Lock after: %u | TID: %llu\n", *(w->lock), tx->TID);
+            // printf("---------------------------------------\n");
         }
     }
 

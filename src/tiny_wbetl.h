@@ -103,7 +103,7 @@ stm_wbetl_rollback(TYPE stm_tx_t *tx)
  * Load a word-sized value (invisible read).
  */
 static inline stm_word_t 
-stm_wbetl_read_invisible(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
+stm_wbetl_read_invisible(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
 {
     volatile stm_word_t *lock;
     stm_word_t l, l2, value, version;
@@ -162,7 +162,7 @@ restart_no_load:
     else
     {
         /* Not locked */
-        value = ATOMIC_LOAD_ACQ(addr);
+        value = ATOMIC_LOAD(addr);
         l2 = ATOMIC_LOAD_ACQ(lock);
         if (l != l2)
         {
@@ -218,7 +218,7 @@ return_value:
 
 
 static inline stm_word_t 
-stm_wbetl_read(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
+stm_wbetl_read(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
 {
 
     return stm_wbetl_read_invisible(tx, addr);
@@ -226,7 +226,7 @@ stm_wbetl_read(TYPE stm_tx_t *tx, volatile stm_word_t *addr)
 
 
 static inline TYPE w_entry_t *
-stm_wbetl_write(TYPE stm_tx_t *tx, volatile stm_word_t *addr, stm_word_t value, stm_word_t mask)
+stm_wbetl_write(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
     volatile stm_word_t *lock;
     stm_word_t l, l1, version;
@@ -410,7 +410,7 @@ stm_wbetl_commit(TYPE stm_tx_t *tx)
     {
         if (w->mask != 0)
         {
-            ATOMIC_STORE(w->addr, w->value);
+            ATOMIC_STORE_VALUE(w->addr, w->value);
         }
 
         /* Only drop lock for last covered address in write set */
