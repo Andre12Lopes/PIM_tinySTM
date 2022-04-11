@@ -111,9 +111,9 @@ typedef struct stm_tx
     unsigned int TID;
     perfcounter_t time;
     perfcounter_t start_time;
-    uint32_t process_cycles;
-    uint32_t commit_cycles;
-    uint32_t total_cycles;
+    uint64_t process_cycles;
+    uint64_t commit_cycles;
+    uint64_t total_cycles;
 } stm_tx_t;
 
 
@@ -344,7 +344,11 @@ int_stm_start(TYPE stm_tx_t *tx)
     int_stm_prepare(tx);
 
     tx->time = perfcounter_config(COUNT_CYCLES, false);
-    tx->start_time = perfcounter_config(COUNT_CYCLES, false);
+
+    if (tx->start_time == 0)
+    {
+        tx->start_time = perfcounter_config(COUNT_CYCLES, false);
+    }
 }
 
 /*
@@ -451,6 +455,8 @@ int_stm_commit(TYPE stm_tx_t *tx)
 
     tx->commit_cycles += perfcounter_get() - tx->time;
     tx->total_cycles += perfcounter_get() - tx->start_time;
+
+    tx->start_time = 0;
 
     return 1;
 }

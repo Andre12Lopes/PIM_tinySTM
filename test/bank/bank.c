@@ -20,13 +20,13 @@
 
 BARRIER_INIT(my_barrier, NR_TASKLETS);
 
-__host uint32_t nb_cycles;
-__host uint32_t nb_process_cycles;
-__host uint32_t nb_commit_cycles;
-__host uint32_t nb_wasted_cycles;
-__host uint32_t n_aborts;
-__host uint32_t n_trans;
-__host uint32_t n_tasklets;
+__host uint64_t nb_cycles;
+__host uint64_t nb_process_cycles;
+__host uint64_t nb_commit_cycles;
+__host uint64_t nb_wasted_cycles;
+__host uint64_t n_aborts;
+__host uint64_t n_trans;
+__host uint64_t n_tasklets;
 
 #ifdef ACC_IN_MRAM
 unsigned int __mram_noinit bank[N_ACCOUNTS];
@@ -65,11 +65,13 @@ int main()
     tx_mram[tid].process_cycles = 0;
     tx_mram[tid].commit_cycles = 0;
     tx_mram[tid].total_cycles = 0;
+    tx_mram[tid].start_time = 0;
 #else
     tx.TID = tid;
     tx.process_cycles = 0;
     tx.commit_cycles = 0;
     tx.total_cycles = 0;
+    tx.start_time = 0;
 #endif
 
     initialize_accounts();
