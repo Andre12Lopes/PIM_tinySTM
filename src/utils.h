@@ -19,6 +19,8 @@
 #define CACHELINE_SIZE 64 /* TODO: Change to DPU */
 #endif
 
+#define PAUSE()
+
 static inline void *
 xrealloc(void *addr, size_t size)
 {

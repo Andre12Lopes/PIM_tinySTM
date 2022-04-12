@@ -109,6 +109,8 @@ typedef struct stm_tx
     // unsigned int nesting;    /* Nesting level */
     unsigned int read_only;
     unsigned int TID;
+    unsigned long long rng;
+    unsigned long retries;
     perfcounter_t time;
     perfcounter_t start_time;
     uint64_t process_cycles;
@@ -244,49 +246,49 @@ stm_allocate_ws_entries(TYPE stm_tx_t *tx, int extend)
 #include "tiny_wtetl.h"
 #endif
 
-// static inline unsigned long long 
-// MarsagliaXORV(unsigned long long x)
-// {
-//     if (x == 0)
-//     {
-//         x = 1;
-//     }
+static inline unsigned long long 
+MarsagliaXORV(unsigned long long x)
+{
+    if (x == 0)
+    {
+        x = 1;
+    }
 
-//     x ^= x << 6;
-//     x ^= x >> 21;
-//     x ^= x << 7;
+    x ^= x << 6;
+    x ^= x >> 21;
+    x ^= x << 7;
 
-//     return x;
-// }
+    return x;
+}
 
-// static inline unsigned long long 
-// MarsagliaXOR(TYPE unsigned long long *seed)
-// {
-//     unsigned long long x = MarsagliaXORV(*seed);
-//     *seed = x;
+static inline unsigned long long 
+MarsagliaXOR(unsigned long long *seed)
+{
+    unsigned long long x = MarsagliaXORV(*seed);
+    *seed = x;
 
-//     return x;
-// }
+    return x;
+}
 
-// static inline unsigned long long 
-// TSRandom(TYPE stm_tx_t *tx)
-// {
-//     return MarsagliaXOR(&tx->TID);
-// }
+static inline unsigned long long 
+TSRandom(TYPE stm_tx_t *tx)
+{
+    return MarsagliaXOR(&tx->rng);
+}
 
-// static inline void 
-// backoff(TYPE stm_tx_t *tx)
-// {
-//     unsigned long long stall = TSRandom(tx) & 0xF;
-//     // stall += attempt >> 2;
-//     stall *= 10;
-//     /* CCM: timer function may misbehave */
-//     unsigned long long i = 0;
-//     while (i++ < stall)
-//     {
-        
-//     }
-// }
+static inline void 
+backoff(TYPE stm_tx_t *tx, long attempt)
+{
+    unsigned long long stall = TSRandom(tx) & 0xF;
+    stall += attempt >> 2;
+    stall *= 10;
+    /* CCM: timer function may misbehave */
+    unsigned long long  i = 0;
+    while (i++ < stall)
+    {
+        PAUSE();
+    }
+}
 
 /*
  * Initialize the transaction descriptor before start or restart.
@@ -320,8 +322,6 @@ int_stm_prepare(TYPE stm_tx_t *tx)
     //     goto start;
     // }
 
-    // backoff(tx);
-
     /* Set status */
     UPDATE_STATUS(tx->status, TX_ACTIVE);
 
@@ -341,14 +341,17 @@ int_stm_start(TYPE stm_tx_t *tx)
     // }
 
     /* Initialize transaction descriptor */
+    if (tx->start_time == 0)
+    {
+        printf(">>>> %u\n", tx->status);
+        tx->start_time = perfcounter_config(COUNT_CYCLES, false);
+    }
+
     int_stm_prepare(tx);
 
     tx->time = perfcounter_config(COUNT_CYCLES, false);
 
-    if (tx->start_time == 0)
-    {
-        tx->start_time = perfcounter_config(COUNT_CYCLES, false);
-    }
+    
 }
 
 /*
@@ -370,6 +373,14 @@ stm_rollback(TYPE stm_tx_t *tx, unsigned int reason)
     stm_wbetl_rollback(tx);
 #elif defined(WRITE_THROUGH_ETL) 
     stm_wtetl_rollback(tx);
+#endif
+
+#ifdef BACKOFF
+    tx->retries++;
+    if (tx->retries > 3)
+    { /* TUNABLE */
+        backoff(tx, tx->retries);
+    }
 #endif
 
     /* Set status to ABORTED */
@@ -457,6 +468,7 @@ int_stm_commit(TYPE stm_tx_t *tx)
     tx->total_cycles += perfcounter_get() - tx->start_time;
 
     tx->start_time = 0;
+    tx->retries = 0;
 
     return 1;
 }

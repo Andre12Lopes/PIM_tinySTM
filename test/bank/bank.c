@@ -14,7 +14,7 @@
 #include "macros.h"
 
 #define TRANSFER 2
-#define N_ACCOUNTS 800
+#define N_ACCOUNTS 50
 #define ACCOUNT_V 1000
 #define N_TRANSACTIONS 1000
 
@@ -62,16 +62,20 @@ int main()
 
 #ifdef TX_IN_MRAM
     tx_mram[tid].TID = tid;
+    tx_mram[tid].rng = tid + 1;
     tx_mram[tid].process_cycles = 0;
     tx_mram[tid].commit_cycles = 0;
     tx_mram[tid].total_cycles = 0;
     tx_mram[tid].start_time = 0;
+    tx_mram[tid].retries = 0;
 #else
     tx.TID = tid;
+    tx.rng = tid + 1;
     tx.process_cycles = 0;
     tx.commit_cycles = 0;
     tx.total_cycles = 0;
     tx.start_time = 0;
+    tx.retries = 0;
 #endif
 
     initialize_accounts();
