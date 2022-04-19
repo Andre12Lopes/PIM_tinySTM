@@ -14,7 +14,7 @@
 #include "macros.h"
 
 #define TRANSFER 2
-#define N_ACCOUNTS 50
+#define N_ACCOUNTS 800
 #define ACCOUNT_V 1000
 #define N_TRANSACTIONS 1000
 
@@ -43,7 +43,9 @@ void check_total();
 
 int main()
 {
+#ifndef TX_IN_MRAM
     stm_tx_t tx;
+#endif
     int tid;
     int ra, rb;
     unsigned int a, b;

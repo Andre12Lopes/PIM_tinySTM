@@ -262,7 +262,7 @@ MarsagliaXORV(unsigned long long x)
 }
 
 static inline unsigned long long 
-MarsagliaXOR(unsigned long long *seed)
+MarsagliaXOR(TYPE unsigned long long *seed)
 {
     unsigned long long x = MarsagliaXORV(*seed);
     *seed = x;
@@ -282,8 +282,9 @@ backoff(TYPE stm_tx_t *tx, long attempt)
     unsigned long long stall = TSRandom(tx) & 0xF;
     stall += attempt >> 2;
     stall *= 10;
+
     /* CCM: timer function may misbehave */
-    unsigned long long  i = 0;
+    volatile unsigned long long  i = 0;
     while (i++ < stall)
     {
         PAUSE();
@@ -343,7 +344,6 @@ int_stm_start(TYPE stm_tx_t *tx)
     /* Initialize transaction descriptor */
     if (tx->start_time == 0)
     {
-        printf(">>>> %u\n", tx->status);
         tx->start_time = perfcounter_config(COUNT_CYCLES, false);
     }
 

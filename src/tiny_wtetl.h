@@ -163,7 +163,9 @@ static inline stm_word_t
 stm_wtetl_read(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
 {
     volatile stm_word_t *lock_addr;
-    stm_word_t l1, l2, value, version;
+    stm_word_t l1;
+    stm_word_t l2;
+    stm_word_t value, version;
     w_entry_t *w;
 
     PRINT_DEBUG("==> stm_wt_read(t=%p[%lu-%lu],a=%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, addr);
@@ -209,6 +211,7 @@ restart_no_load:
         /* Address locked */
         /* Do we own the lock? */
         w = (w_entry_t *)LOCK_GET_ADDR(l1);
+        // printf("####### %u\n", l1);
 
         /* Simply check if address falls inside our write set (avoids
          * non-faulting load) */
@@ -222,6 +225,7 @@ restart_no_load:
             return value;
         }
 
+        // printf("ABORT READ 2 | TID = %u\n", tx->TID);
         stm_rollback(tx, STM_ABORT_RW_CONFLICT);
         
         return 0;
@@ -327,7 +331,6 @@ restart:
         {
             /* Read version must be older (otherwise, tx->end >= version) */
             /* Not much we can do: abort */
-            printf("ABB\n");
             stm_rollback(tx, STM_ABORT_VAL_WRITE);
             return NULL;
         }
@@ -433,8 +436,6 @@ stm_wtetl_commit(TYPE stm_tx_t *tx)
         {
 
             /* No need for CAS (can only be modified by owner transaction) */
-            // printf("Timestamp: %u | TID: %llu\n", LOCK_SET_TIMESTAMP(t), tx->TID);
-            // printf("Lock before: %u | TID: %llu\n", *(w->lock), tx->TID);
             ATOMIC_STORE(w->lock, LOCK_SET_TIMESTAMP(t));
             // printf("Lock after: %u | TID: %llu\n", *(w->lock), tx->TID);
             // printf("---------------------------------------\n");
