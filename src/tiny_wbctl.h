@@ -21,7 +21,7 @@ stm_wbctl_validate(TYPE stm_tx_t *tx)
         if (LOCK_GET_OWNED(l))
         {
             /* Do we own the lock? */
-            w_entry_t *w = (w_entry_t *)LOCK_GET_ADDR(l);
+            TYPE w_entry_t *w = (TYPE w_entry_t *) LOCK_GET_ADDR(l);
 
             /* Simply check if address falls inside our write set (avoids non-faulting load) */
             if (!(tx->w_set.entries <= w && w < tx->w_set.entries + tx->w_set.nb_entries))
