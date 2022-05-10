@@ -113,7 +113,17 @@ typedef struct stm_tx
     unsigned long retries;
     perfcounter_t time;
     perfcounter_t start_time;
+    perfcounter_t start_read;
+    perfcounter_t start_write;
+    perfcounter_t start_validation;
     uint64_t process_cycles;
+    uint64_t read_cycles;
+    uint64_t write_cycles;
+    uint64_t validation_cycles;    
+    uint64_t total_read_cycles;
+    uint64_t total_write_cycles;
+    uint64_t total_validation_cycles;
+    uint64_t total_commit_validation_cycles;
     uint64_t commit_cycles;
     uint64_t total_cycles;
 } stm_tx_t;
@@ -311,6 +321,10 @@ int_stm_prepare(TYPE stm_tx_t *tx)
 
     tx->read_only = 0;
 
+    tx->read_cycles = 0;
+    tx->write_cycles = 0;
+    tx->validation_cycles = 0;
+
     // start:
     /* Start timestamp */
     tx->start = tx->end = GET_CLOCK; /* OPT: Could be delayed until first read/write */
@@ -348,12 +362,9 @@ int_stm_start(TYPE stm_tx_t *tx)
     {
         tx->start_time = perfcounter_config(COUNT_CYCLES, false);
     }
-
-    int_stm_prepare(tx);
-
     tx->time = perfcounter_config(COUNT_CYCLES, false);
 
-    
+    int_stm_prepare(tx);
 }
 
 /*
@@ -404,15 +415,21 @@ stm_rollback(TYPE stm_tx_t *tx, unsigned int reason)
 static inline stm_word_t 
 int_stm_load(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
 {
+    stm_word_t val = -1;
+
+    tx->start_read = perfcounter_config(COUNT_CYCLES, false);
+
 #if defined(WRITE_BACK_CTL)
-    return stm_wbctl_read(tx, addr);
+    val = stm_wbctl_read(tx, addr);
 #elif defined(WRITE_BACK_ETL)
-    return stm_wbetl_read(tx, addr);
+    val = stm_wbetl_read(tx, addr);
 #elif defined(WRITE_THROUGH_ETL) 
-    return stm_wtetl_read(tx, addr);
+    val = stm_wtetl_read(tx, addr);
 #endif
 
-    return -1;
+    tx->read_cycles += perfcounter_get() - tx->start_read;
+
+    return val;
 }
 
 static inline void 
@@ -421,6 +438,8 @@ int_stm_store(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t 
     PRINT_DEBUG("==> int_stm_store(t=%p[%lu-%lu],a=%p,d=%p-%lu)\n",
                tx, (unsigned long)tx->start, (unsigned long)tx->end, addr, (void *)value, (unsigned long)value);
 
+    tx->start_write = perfcounter_config(COUNT_CYCLES, false);
+
 #if defined(WRITE_BACK_CTL)
     stm_wbctl_write(tx, addr, value, ~(stm_word_t)0);
 #elif defined(WRITE_BACK_ETL)
@@ -428,11 +447,15 @@ int_stm_store(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t 
 #elif defined(WRITE_THROUGH_ETL) 
     stm_wtetl_write(tx, addr, value, ~(stm_word_t)0);
 #endif
+
+    tx->write_cycles += perfcounter_get() - tx->start_write;
 }
 
 static inline int
 int_stm_commit(TYPE stm_tx_t *tx)
 {
+    uint64_t t_process_cycles;
+
     PRINT_DEBUG("==> stm_commit(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
 
     /* Decrement nesting level */
@@ -443,7 +466,7 @@ int_stm_commit(TYPE stm_tx_t *tx)
 
     assert(IS_ACTIVE(tx->status));
 
-    tx->process_cycles += perfcounter_get() - tx->time;
+    t_process_cycles = perfcounter_get() - tx->time;
     tx->time = perfcounter_config(COUNT_CYCLES, false);
 
     /* A read-only transaction can commit immediately */
@@ -466,8 +489,12 @@ int_stm_commit(TYPE stm_tx_t *tx)
     /* Set status to COMMITTED */
     SET_STATUS(tx->status, TX_COMMITTED);
 
+    tx->process_cycles += t_process_cycles;
     tx->commit_cycles += perfcounter_get() - tx->time;
     tx->total_cycles += perfcounter_get() - tx->start_time;
+    tx->total_read_cycles += tx->read_cycles;
+    tx->total_write_cycles += tx->write_cycles;
+    tx->total_validation_cycles += tx->validation_cycles;
 
     tx->start_time = 0;
     tx->retries = 0;

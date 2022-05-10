@@ -59,10 +59,13 @@ stm_wbetl_extend(TYPE stm_tx_t *tx)
     /* No need to check clock overflow here. The clock can exceed up to MAX_THREADS and it will be reset when the
      * quiescence is reached. */
 
+    tx->start_validation = perfcounter_config(COUNT_CYCLES, false);
     /* Try to validate read set */
     if (stm_wbetl_validate(tx))
     {
         /* It works: we can extend until now */
+        tx->validation_cycles += perfcounter_get() - tx->start_validation;
+
         tx->end = now;
         return 1;
     }
@@ -388,6 +391,7 @@ stm_wbetl_commit(TYPE stm_tx_t *tx)
     TYPE w_entry_t *w;
     stm_word_t t;
     int i;
+    perfcounter_t s_time;
 
     PRINT_DEBUG("==> stm_wbetl_commit(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
 
@@ -396,6 +400,7 @@ stm_wbetl_commit(TYPE stm_tx_t *tx)
     /* Get commit timestamp (may exceed VERSION_MAX by up to MAX_THREADS) */
     t = FETCH_INC_CLOCK;
 
+    s_time = perfcounter_config(COUNT_CYCLES, false);
     /* Try to validate (only if a concurrent transaction has committed since tx->start) */
     if (tx->start != t - 1 && !stm_wbetl_validate(tx))
     {
@@ -403,6 +408,7 @@ stm_wbetl_commit(TYPE stm_tx_t *tx)
         stm_rollback(tx, STM_ABORT_VALIDATE);
         return 0;
     }
+    tx->total_commit_validation_cycles += perfcounter_get() - s_time;
 
     /* Install new versions, drop locks and set new timestamp */
     w = tx->w_set.entries;
