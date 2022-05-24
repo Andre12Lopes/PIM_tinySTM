@@ -10,6 +10,6 @@ for (( i = 1; i < 21; i++ )); do
 	cd ../benchmark
 	
 	for (( j = 0; j < 10; j++ )); do
-		./launch >> results.txt
+		./launch_bank >> results.txt
 	done
 done

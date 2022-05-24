@@ -31,7 +31,7 @@ stm_start(TYPE stm_tx_t *tx)
 }
 
 stm_word_t 
-stm_load(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
+stm_load(TYPE stm_tx_t *tx, volatile __mram_ptr stm_word_t *addr)
 {
     return int_stm_load(tx, addr);
 }

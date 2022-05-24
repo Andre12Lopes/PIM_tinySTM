@@ -83,7 +83,7 @@ int main(void)
                   << "\t" << nTransactions.front().front() 
                   << "\t" << time << "\t" 
                   << ((double) aborts * 100) / (aborts + nTransactions.front().front()) 
-                  << "\t" << process_read_time << "\t" << process_write_time << "\t" << process_validation_time 
+                  << "\t" << process_read_time - process_validation_time << "\t" << process_write_time << "\t" << process_validation_time 
                   << "\t" << process_time - (process_read_time + process_write_time + process_validation_time)
                   << "\t" << commit_validation_time << "\t" << commit_time - commit_validation_time << "\t"
                   << wasted_time << std::endl;

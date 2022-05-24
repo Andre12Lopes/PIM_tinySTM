@@ -69,7 +69,7 @@ typedef struct r_entry
 
 typedef struct r_set
 {                               /* Read set */   /* Array of entries */
-    r_entry_t entries[2];       /* Array of entries */
+    r_entry_t entries[25];       /* Array of entries */
     unsigned int nb_entries;    /* Number of entries */
     unsigned int size;          /* Size of array */
 } r_set_t;
@@ -90,7 +90,7 @@ typedef struct w_entry
 
 typedef struct w_set
 {                               /* Write set */     /* Array of entries */
-    w_entry_t entries[2];       /* Array of entries */
+    w_entry_t entries[1];       /* Array of entries */
     unsigned int nb_entries;    /* Number of entries */
     unsigned int size;          /* Size of array */
     unsigned int has_writes;
@@ -316,8 +316,8 @@ int_stm_prepare(TYPE stm_tx_t *tx)
     tx->w_set.nb_entries = 0;
     tx->r_set.nb_entries = 0;
 
-    tx->w_set.size = 2;
-    tx->r_set.size = 2;
+    tx->w_set.size = 1;
+    tx->r_set.size = 25;
 
     tx->read_only = 0;
 
@@ -375,9 +375,6 @@ stm_rollback(TYPE stm_tx_t *tx, unsigned int reason)
 {
     (void) reason;
 
-    PRINT_DEBUG("==> stm_rollback(%p[%lu-%lu])\n", tx, 
-                (unsigned long)tx->start, (unsigned long)tx->end);
-
     assert(IS_ACTIVE(tx->status));
 
 #if defined(WRITE_BACK_CTL)
@@ -413,7 +410,7 @@ stm_rollback(TYPE stm_tx_t *tx, unsigned int reason)
 }
 
 static inline stm_word_t 
-int_stm_load(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
+int_stm_load(TYPE stm_tx_t *tx, volatile __mram_ptr stm_word_t *addr)
 {
     stm_word_t val = -1;
 

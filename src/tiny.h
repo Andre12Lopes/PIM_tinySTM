@@ -55,7 +55,7 @@ void stm_start(TYPE struct stm_tx *tx);
 
 /* TODO: Read does not deal well with floating point operations */
 /* TODO: Change return type */
-stm_word_t stm_load(TYPE struct stm_tx *tx, volatile TYPE_ACC stm_word_t *addr);
+stm_word_t stm_load(TYPE struct stm_tx *tx, volatile __mram_ptr stm_word_t *addr);
 
 void stm_store(TYPE struct stm_tx *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t value);
 

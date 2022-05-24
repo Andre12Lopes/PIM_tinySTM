@@ -163,7 +163,7 @@ stm_wtetl_rollback(TYPE stm_tx_t *tx)
 }
 
 static inline stm_word_t 
-stm_wtetl_read(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
+stm_wtetl_read(TYPE stm_tx_t *tx, volatile __mram_ptr stm_word_t *addr)
 {
     volatile stm_word_t *lock_addr;
     stm_word_t l1;
@@ -181,7 +181,7 @@ restart_no_load:
     if (!LOCK_GET_WRITE(l1))
     {
         /* Address not locked */
-        value = ATOMIC_LOAD(addr);
+        value = ATOMIC_LOAD_VALUE_MRAM(addr);
         l2 = ATOMIC_LOAD_ACQ(lock_addr);
 
         if (l1 != l2)
@@ -222,7 +222,7 @@ restart_no_load:
         {
             /* Yes: we have a version locked by us that was valid at write time
              */
-            value = ATOMIC_LOAD(addr);
+            value = ATOMIC_LOAD_VALUE_MRAM(addr);
 
             /* No need to add to read set (will remain valid) */
             return value;

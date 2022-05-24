@@ -164,7 +164,7 @@ restart_no_load:
     else
     {
         /* Not locked */
-        value = ATOMIC_LOAD(addr);
+        value = ATOMIC_LOAD_VALUE_MRAM(addr);
         l2 = ATOMIC_LOAD_ACQ(lock);
         if (l != l2)
         {

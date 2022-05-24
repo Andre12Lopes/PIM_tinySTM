@@ -140,14 +140,14 @@ restart_no_load:
                 if (addr == w->addr)
                 {
                     /* Yes: get value from write set (or from memory if mask was empty) */
-                    value = (w->mask == 0 ? ATOMIC_LOAD(addr) : w->value);
+                    value = (w->mask == 0 ? ATOMIC_LOAD_VALUE_MRAM(addr) : w->value);
                     break;
                 }
 
                 if (w->next == NULL)
                 {
                     /* No: get value from memory */
-                    value = ATOMIC_LOAD(addr);
+                    value = ATOMIC_LOAD_VALUE_MRAM(addr);
 
                     break;
                 }
@@ -165,7 +165,7 @@ restart_no_load:
     else
     {
         /* Not locked */
-        value = ATOMIC_LOAD(addr);
+        value = ATOMIC_LOAD_VALUE_MRAM(addr);
         l2 = ATOMIC_LOAD_ACQ(lock);
         if (l != l2)
         {

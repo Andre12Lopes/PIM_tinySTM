@@ -3,6 +3,7 @@
 
 #define ATOMIC_LOAD_ACQ(a) (AO_load_read((volatile size_t *)(a)))
 #define ATOMIC_LOAD_MRAM(a) (*((volatile TYPE size_t *)(a)))
+#define ATOMIC_LOAD_VALUE_MRAM(a) (*((volatile TYPE_ACC size_t *)(a)))
 #define ATOMIC_LOAD(a) (*a)
 #define ATOMIC_STORE(a, v) (*((volatile size_t *)(a)) = (size_t)(v))
 #define ATOMIC_STORE_VALUE(a, v) (*((volatile TYPE_ACC size_t *)(a)) = (size_t)(v))
