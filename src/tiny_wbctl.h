@@ -223,7 +223,7 @@ restart_no_load:
 
 
 static inline TYPE w_entry_t *
-stm_wbctl_write(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t value, stm_word_t mask)
+stm_wbctl_write(TYPE stm_tx_t *tx, volatile __mram_ptr stm_word_t *addr, stm_word_t value, stm_word_t mask)
 {
     volatile stm_word_t *lock;
     stm_word_t l, version;

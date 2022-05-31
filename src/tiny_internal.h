@@ -4,8 +4,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <perfcounter.h>
+
 #include "atomic.h"
 #include "utils.h"
+
+#ifndef R_SET_SIZE
+# define R_SET_SIZE                 45                /* Initial size of read sets */
+#endif /* ! RW_SET_SIZE */
+
+#ifndef W_SET_SIZE
+# define W_SET_SIZE                 1                /* Initial size of write sets */
+#endif /* ! RW_SET_SIZE */
 
 #ifndef LOCK_ARRAY_LOG_SIZE
 #define LOCK_ARRAY_LOG_SIZE         10                  /* Size of lock array: 2^10 = 1024 */
@@ -69,7 +79,7 @@ typedef struct r_entry
 
 typedef struct r_set
 {                               /* Read set */   /* Array of entries */
-    r_entry_t entries[25];       /* Array of entries */
+    r_entry_t entries[R_SET_SIZE];       /* Array of entries */
     unsigned int nb_entries;    /* Number of entries */
     unsigned int size;          /* Size of array */
 } r_set_t;
@@ -90,7 +100,7 @@ typedef struct w_entry
 
 typedef struct w_set
 {                               /* Write set */     /* Array of entries */
-    w_entry_t entries[1];       /* Array of entries */
+    w_entry_t entries[W_SET_SIZE];       /* Array of entries */
     unsigned int nb_entries;    /* Number of entries */
     unsigned int size;          /* Size of array */
     unsigned int has_writes;
@@ -197,6 +207,8 @@ stm_allocate_rs_entries(TYPE stm_tx_t *tx, int extend)
     PRINT_DEBUG("==> stm_allocate_rs_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end,
                 extend);
 
+    SET_STATUS(tx->status, TX_ABORTED);
+
     // if (extend)
     // {
     //     tx->r_set.size *= 2;
@@ -224,6 +236,8 @@ stm_allocate_ws_entries(TYPE stm_tx_t *tx, int extend)
 
     PRINT_DEBUG("==> stm_allocate_ws_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end,
                 extend);
+
+    SET_STATUS(tx->status, TX_ABORTED);
 
     // if (extend)
     // {
@@ -313,11 +327,11 @@ int_stm_prepare(TYPE stm_tx_t *tx)
     tx->w_set.has_writes = 0;
     tx->w_set.nb_acquired = 0;
 
-    tx->w_set.nb_entries = 0;
     tx->r_set.nb_entries = 0;
+    tx->w_set.nb_entries = 0;
 
-    tx->w_set.size = 1;
-    tx->r_set.size = 25;
+    tx->r_set.size = R_SET_SIZE;
+    tx->w_set.size = W_SET_SIZE;
 
     tx->read_only = 0;
 
@@ -430,7 +444,7 @@ int_stm_load(TYPE stm_tx_t *tx, volatile __mram_ptr stm_word_t *addr)
 }
 
 static inline void 
-int_stm_store(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t value)
+int_stm_store(TYPE stm_tx_t *tx, volatile __mram_ptr stm_word_t *addr, stm_word_t value)
 {
     PRINT_DEBUG("==> int_stm_store(t=%p[%lu-%lu],a=%p,d=%p-%lu)\n",
                tx, (unsigned long)tx->start, (unsigned long)tx->end, addr, (void *)value, (unsigned long)value);

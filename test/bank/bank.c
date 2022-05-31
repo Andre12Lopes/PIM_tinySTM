@@ -32,7 +32,7 @@ __host uint64_t n_aborts;
 __host uint64_t n_trans;
 __host uint64_t n_tasklets;
 
-#ifdef ACC_IN_MRAM
+#ifdef DATA_IN_MRAM
 unsigned int __mram_noinit bank[N_ACCOUNTS];
 #else
 unsigned int bank[N_ACCOUNTS];

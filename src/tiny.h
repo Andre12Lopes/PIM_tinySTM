@@ -9,7 +9,7 @@
 #define TYPE
 #endif
 
-#ifdef ACC_IN_MRAM
+#ifdef DATA_IN_MRAM
 #define TYPE_ACC __mram_ptr
 #else
 #define TYPE_ACC
@@ -57,7 +57,7 @@ void stm_start(TYPE struct stm_tx *tx);
 /* TODO: Change return type */
 stm_word_t stm_load(TYPE struct stm_tx *tx, volatile __mram_ptr stm_word_t *addr);
 
-void stm_store(TYPE struct stm_tx *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t value);
+void stm_store(TYPE struct stm_tx *tx, volatile __mram_ptr stm_word_t *addr, stm_word_t value);
 
 int stm_commit(TYPE struct stm_tx *tx);
 

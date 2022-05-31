@@ -1,7 +1,7 @@
 ROOT = ../..
 
 CC = dpu-upmem-dpurte-clang
-NR_TASKLETS = 11
+NR_TASKLETS = 12
 
 TM = tiny
 SRCDIR = $(ROOT)/src
@@ -10,12 +10,16 @@ LIBDIR = $(ROOT)/lib
 TMLIB = $(LIBDIR)/lib$(TM).a
 TARGET = intset
 
-TARGET_OBJS = intset.o linked_list.o dpu_alloc.o
+TARGET_OBJS = intset.o linked_list.o skip_list.o hash_set.o dpu_alloc.o
 
 CFLAGS += -Wall -Wno-unused-label -Wno-unused-function -std=c11
 
 LDFLAGS += -L$(LIBDIR) -l$(TM)
 CPPFLAGS += -I$(SRCDIR)
+
+DEFINES += -DLINKED_LIST
+# DEFINES += -DSKIP_LIST
+# DEFINES += -DHASH_SET
 
 .PHONY:	all clean
 
@@ -26,6 +30,8 @@ $(TARGET): $(TARGET_OBJS) $(TMLIB)
 
 intset.o: intset.c linked_list.h intset_macros.h
 linked_list.o: linked_list.c dpu_alloc.h intset_macros.h
+skip_list.o: skip_list.c dpu_alloc.h intset_macros.h
+hash_set.o: hash_set.c dpu_alloc.h intset_macros.h
 dpu_alloc.o: dpu_alloc.c
 
 .c.o:

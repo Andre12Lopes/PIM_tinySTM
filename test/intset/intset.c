@@ -9,8 +9,15 @@
 #include <tiny.h>
 #include <tiny_internal.h>
 
-#include "linked_list.h"
 #include "intset_macros.h"
+
+#if defined(LINKED_LIST)
+#include "linked_list.h"
+#elif defined(SKIP_LIST)
+#include "skip_list.h"
+#elif defined(HASH_SET)
+#include "hash_set.h"
+#endif
 
 #define UPDATE_PERCENTAGE   20
 #define SET_INITIAL_SIZE    10
@@ -21,13 +28,20 @@
 BARRIER_INIT(barrier, NR_TASKLETS);
 
 __host uint64_t nb_cycles;
+__host uint64_t nb_process_cycles;
+__host uint64_t nb_process_read_cycles;
+__host uint64_t nb_process_write_cycles;
+__host uint64_t nb_process_validation_cycles;
+__host uint64_t nb_commit_cycles;
+__host uint64_t nb_commit_validation_cycles;
+__host uint64_t nb_wasted_cycles;
 __host uint64_t n_aborts;
 __host uint64_t n_trans;
 __host uint64_t n_tasklets;
 
 __mram_ptr intset_t *set;
 
-void test(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, uint64_t *seed);
+void test(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, uint64_t *seed, int *last);
 void print_linked_list(__mram_ptr intset_t *set);
 
 int main()
@@ -38,6 +52,7 @@ int main()
     int val, tid;
     uint64_t seed;
     int i = 0;
+    int last = -1;
     perfcounter_t initial_time;
 
     seed = me();
@@ -68,10 +83,10 @@ int main()
         while (i < SET_INITIAL_SIZE) 
         {
             val = (RAND_R_FNC(seed) % RAND_RANGE) + 1;
-            if (set_add(set, val, 0))
+            if (set_add(NULL, NULL, set, val, 0))
             {
                 i++;
-            }            
+            }
         }
 
         n_trans = N_TRANSACTIONS * NR_TASKLETS;
@@ -85,7 +100,7 @@ int main()
 
     for (int i = 0; i < N_TRANSACTIONS; ++i)
     {
-        test(&tx, &t_aborts, set, &seed);
+        test(&tx, &t_aborts, set, &seed, &last);
     }
 
     barrier_wait(&barrier);
@@ -93,6 +108,14 @@ int main()
     if (me() == 0)
     {
         nb_cycles = perfcounter_get() - initial_time;
+
+        nb_process_cycles = 0;
+        nb_commit_cycles = 0;
+        nb_wasted_cycles = 0;
+        nb_process_read_cycles = 0;
+        nb_process_write_cycles = 0;
+        nb_process_validation_cycles = 0;
+        nb_commit_validation_cycles = 0;
     }
 
     for (int i = 0; i < NR_TASKLETS; ++i)
@@ -100,54 +123,66 @@ int main()
         if (me() == i)
         {
             n_aborts += t_aborts;
+
+            nb_process_cycles += ((double) tx.process_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_process_read_cycles += ((double) tx.total_read_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_process_write_cycles += ((double) tx.total_write_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_process_validation_cycles += ((double) tx.total_validation_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+
+            nb_commit_cycles += ((double) tx.commit_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_commit_validation_cycles += ((double) tx.total_commit_validation_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+
+            nb_wasted_cycles += ((double) (tx.total_cycles - (tx.process_cycles + tx.commit_cycles)) / (N_TRANSACTIONS * NR_TASKLETS));
         }
 
         barrier_wait(&barrier);
     }
 
-    // print_linked_list(set);
+    // if (me() == 0)
+    // {
+    //     print_linked_list(set);
+    // }
 
     return 0;
 }
 
 
-void test(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, uint64_t *seed)
+void test(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, uint64_t *seed, int *last)
 {
-    int val;
-    // int op, last = -1;
+    int val, op;
 
-    // op = RAND_R_FNC(seed) % 100;
-    // if (op < UPDATE_PERCENTAGE)
-    // {
-    //     if (last < 0)
-    //     {
-    //         /* Add random value */
-    //         val = (RAND_R_FNC(seed) % RAND_RANGE) + 1;
-    //         if (set_add(set, val, 1))
-    //         {
-    //             last = val;
-    //         }
-    //     }
-    //     else
-    //     {
-    //         /* Remove last value */
-    //         set_remove(set, last);
-    //         last = -1;
-    //     }
-    // }
-    // else
-    // {
-    //     /* Look for random value */
+    op = RAND_R_FNC(*seed) % 100;
+    if (op < UPDATE_PERCENTAGE)
+    {
+        if (*last < 0)
+        {
+            /* Add random value */
+            val = (RAND_R_FNC(*seed) % RAND_RANGE) + 1;
+            if (set_add(tx, t_aborts, set, val, 1))
+            {
+                *last = val;
+            }
+        }
+        else
+        {
+            /* Remove last value */
+            set_remove(tx, t_aborts, set, *last);
+            *last = -1;
+        }
+    }
+    else
+    {
+        /* Look for random value */
         val = (RAND_R_FNC(*seed) % RAND_RANGE) + 1;
         set_contains(tx, t_aborts, set, val);
-    // }
+    }
 }
 
 
 void print_linked_list(__mram_ptr intset_t *set)
 {
-    for (__mram_ptr node_t *n = set->head->next; n->next != NULL; n = n->next)
-    {
-        printf("%p -> %u\n", n, n->val);
-    }
+    // for (__mram_ptr node_t *n = set->head->next; n->next != NULL; n = n->next)
+    // {
+    //     printf("%p -> %u\n", n, n->val);
+    // }
 }

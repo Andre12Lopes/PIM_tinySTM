@@ -37,7 +37,7 @@ stm_load(TYPE stm_tx_t *tx, volatile __mram_ptr stm_word_t *addr)
 }
 
 void 
-stm_store(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr, stm_word_t value)
+stm_store(TYPE stm_tx_t *tx, volatile __mram_ptr stm_word_t *addr, stm_word_t value)
 {
     int_stm_store(tx, addr, value);
 }

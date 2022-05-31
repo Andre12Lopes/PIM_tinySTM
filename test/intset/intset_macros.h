@@ -7,24 +7,24 @@
     {                                                                                                                  \
         stm_start(tx);
 
-#define LOAD(tx, val, ab)                                                                                         	   \
-	    stm_load(tx, (__mram_ptr stm_word_t *)val);                                                                                             \
+#define LOAD(tx, addr, ab)                                                                                         	   \
+	    stm_load(tx, (__mram_ptr stm_word_t *)addr);                                                                                             \
 	    if ((tx)->status == 4)                                                                                         \
 	    {                                                                                                              \
 	        (ab)++;                                                                                                      \
 	        continue;                                                                                                  \
 	    }
 
-#define LOAD_RO(tx, val, ab)                                                                                           \
-	    stm_load(tx, (__mram_ptr stm_word_t *)val);                                                                                             \
+#define LOAD_RO(tx, addr, ab)                                                                                           \
+	    stm_load(tx, (__mram_ptr stm_word_t *)addr);                                                                                             \
 	    if ((tx)->status == 4)                                                                                         \
 	    {                                                                                                              \
 	        (ab)++;                                                                                                      \
 	        break;                                                                                                     \
 	    }
 
-#define STORE(tx, val, v, ab)                                                                                          \
-	    stm_store(tx, val, v);                                                                                         \
+#define STORE(tx, addr, v, ab)                                                                                          \
+	    stm_store(tx, (__mram_ptr stm_word_t *)addr, (stm_word_t)v);                                                                                         \
 	    if ((tx)->status == 4)                                                                                         \
 	    {                                                                                                              \
 	        (ab)++;                                                                                                      \
