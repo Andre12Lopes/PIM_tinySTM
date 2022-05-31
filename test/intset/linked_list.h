@@ -20,12 +20,12 @@ __mram_ptr intset_t *
 set_new();
 
 int 
-set_contains(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val);
+set_contains(TYPE stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val);
 
 int 
-set_add(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val, int transactional);
+set_add(TYPE stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val, int transactional);
 
 int 
-set_remove(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val);
+set_remove(TYPE stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val);
 
 #endif /* _LINKED_LIST_H_ */

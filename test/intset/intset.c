@@ -25,6 +25,12 @@
 
 #define N_TRANSACTIONS      100
 
+#ifdef TX_IN_MRAM
+#define TYPE __mram_ptr
+#else
+#define TYPE
+#endif
+
 BARRIER_INIT(barrier, NR_TASKLETS);
 
 __host uint64_t nb_cycles;
@@ -41,13 +47,18 @@ __host uint64_t n_tasklets;
 
 __mram_ptr intset_t *set;
 
-void test(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, uint64_t *seed, int *last);
+#ifdef TX_IN_MRAM
+struct stm_tx __mram_noinit tx_mram[NR_TASKLETS];
+#endif
+
+void test(TYPE stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, uint64_t *seed, int *last);
 void print_linked_list(__mram_ptr intset_t *set);
 
 int main()
 {
+#ifndef TX_IN_MRAM
     stm_tx_t tx;
-    
+#endif
     uint64_t t_aborts = 0;
     int val, tid;
     uint64_t seed;
@@ -58,6 +69,25 @@ int main()
     seed = me();
     tid = me();
 
+#ifdef TX_IN_MRAM
+    tx_mram[tid].TID = tid;
+    tx_mram[tid].rng = tid + 1;
+    tx_mram[tid].process_cycles = 0;
+    tx_mram[tid].read_cycles = 0;
+    tx_mram[tid].write_cycles = 0;
+    tx_mram[tid].validation_cycles = 0;
+    tx_mram[tid].total_read_cycles = 0;
+    tx_mram[tid].total_write_cycles = 0;
+    tx_mram[tid].total_validation_cycles = 0;
+    tx_mram[tid].total_commit_validation_cycles = 0;
+    tx_mram[tid].commit_cycles = 0;
+    tx_mram[tid].total_cycles = 0;
+    tx_mram[tid].start_time = 0;
+    tx_mram[tid].start_read = 0;
+    tx_mram[tid].start_write = 0;
+    tx_mram[tid].start_validation = 0;
+    tx_mram[tid].retries = 0;
+#else
     tx.TID = tid;
     tx.rng = tid + 1;
     tx.process_cycles = 0;
@@ -75,6 +105,7 @@ int main()
     tx.start_write = 0;
     tx.start_validation = 0;
     tx.retries = 0;
+#endif
 
     if (tid == 0)
     {
@@ -100,7 +131,11 @@ int main()
 
     for (int i = 0; i < N_TRANSACTIONS; ++i)
     {
+#ifdef TX_IN_MRAM
+        test(&(tx_mram[tid]), &t_aborts, set, &seed, &last);
+#else
         test(&tx, &t_aborts, set, &seed, &last);
+#endif
     }
 
     barrier_wait(&barrier);
@@ -124,6 +159,17 @@ int main()
         {
             n_aborts += t_aborts;
 
+#ifdef TX_IN_MRAM
+            nb_process_cycles += ((double) tx_mram[tid].process_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_process_read_cycles += ((double) tx_mram[tid].total_read_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_process_write_cycles += ((double) tx_mram[tid].total_write_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_process_validation_cycles += ((double) tx_mram[tid].total_validation_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+
+            nb_commit_cycles += ((double) tx_mram[tid].commit_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+            nb_commit_validation_cycles += ((double) tx_mram[tid].total_commit_validation_cycles / (N_TRANSACTIONS * NR_TASKLETS));
+
+            nb_wasted_cycles += ((double) (tx_mram[tid].total_cycles - (tx_mram[tid].process_cycles + tx_mram[tid].commit_cycles)) / (N_TRANSACTIONS * NR_TASKLETS));
+#else
             nb_process_cycles += ((double) tx.process_cycles / (N_TRANSACTIONS * NR_TASKLETS));
             nb_process_read_cycles += ((double) tx.total_read_cycles / (N_TRANSACTIONS * NR_TASKLETS));
             nb_process_write_cycles += ((double) tx.total_write_cycles / (N_TRANSACTIONS * NR_TASKLETS));
@@ -133,6 +179,7 @@ int main()
             nb_commit_validation_cycles += ((double) tx.total_commit_validation_cycles / (N_TRANSACTIONS * NR_TASKLETS));
 
             nb_wasted_cycles += ((double) (tx.total_cycles - (tx.process_cycles + tx.commit_cycles)) / (N_TRANSACTIONS * NR_TASKLETS));
+#endif
         }
 
         barrier_wait(&barrier);
@@ -147,7 +194,7 @@ int main()
 }
 
 
-void test(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, uint64_t *seed, int *last)
+void test(TYPE stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, uint64_t *seed, int *last)
 {
     int val, op;
 
