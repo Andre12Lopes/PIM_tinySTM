@@ -53,6 +53,7 @@ struct stm_tx __mram_noinit tx_mram[NR_TASKLETS];
 
 void test(TYPE stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, uint64_t *seed, int *last);
 void print_linked_list(__mram_ptr intset_t *set);
+void print_hash_set(__mram_ptr intset_t *set);
 
 int main()
 {
@@ -120,6 +121,8 @@ int main()
             }
         }
 
+        // print_hash_set(set);
+
         n_trans = N_TRANSACTIONS * NR_TASKLETS;
         n_tasklets = NR_TASKLETS;
         n_aborts = 0;
@@ -185,10 +188,11 @@ int main()
         barrier_wait(&barrier);
     }
 
-    // if (me() == 0)
-    // {
-    //     print_linked_list(set);
-    // }
+    if (me() == 0)
+    {
+        // print_linked_list(set);
+        // print_hash_set(set);
+    }
 
     return 0;
 }
@@ -232,4 +236,26 @@ void print_linked_list(__mram_ptr intset_t *set)
     // {
     //     printf("%p -> %u\n", n, n->val);
     // }
+}
+
+void print_hash_set(__mram_ptr intset_t *set)
+{
+    __mram_ptr bucket_t *b;
+
+    for (int i = 0; i < 1024; ++i)
+    {
+        b = (__mram_ptr bucket_t *)set->buckets[i];
+
+        if (b)
+        {
+            printf("\n");
+        }
+        
+        for (; b != NULL ; b = b->next)
+        {
+            printf("%u -", b->val);
+        }
+    }
+
+    printf("\n");
 }

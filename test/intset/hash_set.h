@@ -13,7 +13,7 @@ typedef struct bucket
 
 typedef struct intset
 {
-    __mram_ptr bucket_t **buckets;
+    __mram_ptr uintptr_t *buckets;
 } intset_t;
 
 __mram_ptr intset_t *

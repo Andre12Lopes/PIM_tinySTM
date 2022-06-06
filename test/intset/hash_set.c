@@ -59,18 +59,15 @@ __mram_ptr intset_t *set_new()
         exit(1);
     }
 
-    if ((set->buckets = (__mram_ptr bucket_t **)mram_malloc(NB_BUCKETS * sizeof(bucket_t *))) == NULL)
+    if ((set->buckets = (__mram_ptr uintptr_t *)mram_malloc(NB_BUCKETS * sizeof(bucket_t))) == NULL)
     {
         exit(1);
     }
 
-    printf(">>> %p\n", set->buckets);
-
-    // for (int i = 0; i < NB_BUCKETS; ++i)
-    // {
-    // 	// set->buckets[i] = NULL;
-    // 	printf("%p\n", set->buckets[i]);
-    // }
+    for (int i = 0; i < NB_BUCKETS; ++i)
+    {
+    	set->buckets[i] = 0;
+    }
 
     return set;
 }
@@ -78,45 +75,32 @@ __mram_ptr intset_t *set_new()
 int set_contains(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val)
 {
     int result, i;
-//     bucket_t *b;
+    __mram_ptr bucket_t *b;
+    val_t v;
 
-// #ifdef DEBUG
-//     printf("++> set_contains(%d)\n", val);
-//     IO_FLUSH;
-// #endif
+    START(tx);
+    i = HASH(val);
+    b = (__mram_ptr bucket_t *)LOAD(tx, &(set->buckets[i]), *t_aborts);
+    result = 0;
 
-//     if (!td)
-//     {
-//         i = HASH(val);
-//         b = set->buckets[i];
-//         result = 0;
-//         while (b != NULL)
-//         {
-//             if (b->val == val)
-//             {
-//                 result = 1;
-//                 break;
-//             }
-//             b = b->next;
-//         }
-//     }
-//     else
-//     {
-//         TM_START(0, RO);
-//         i = HASH(val);
-//         b = (bucket_t *)TM_LOAD(&set->buckets[i]);
-//         result = 0;
-//         while (b != NULL)
-//         {
-//             if (TM_LOAD(&b->val) == val)
-//             {
-//                 result = 1;
-//                 break;
-//             }
-//             b = (bucket_t *)TM_LOAD(&b->next);
-//         }
-//         TM_COMMIT;
-//     }
+    while (b != NULL)
+    {
+        v = LOAD_RO(tx, &(b->val), *t_aborts);
+        if (v == val)
+        {
+            result = 1;
+            break;
+        }
+
+        b = (__mram_ptr bucket_t *)LOAD_RO(tx, &(b->next), *t_aborts);
+    }
+
+    if (tx->status == 4)
+    {
+        continue;
+    }
+
+    COMMIT(tx, *t_aborts);
 
     return result;
 }
@@ -125,11 +109,13 @@ int set_add(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t va
 {
     int result, i;
     __mram_ptr bucket_t *b, *first;
+    val_t v;
 
     if (!transactional)
     {
         i = HASH(val);
-        first = b = set->buckets[i];
+        first = (__mram_ptr bucket_t *)set->buckets[i];
+        b = (__mram_ptr bucket_t *)set->buckets[i];
         result = 1;
         while (b != NULL)
         {
@@ -143,29 +129,38 @@ int set_add(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t va
 
         if (result)
         {
-            set->buckets[i] = new_entry(val, first, 0);
+            set->buckets[i] = (uintptr_t)new_entry(val, first, 0);
         }
     }
     else
     {
-        // TM_START(0, RW);
-        // i = HASH(val);
-        // first = b = (bucket_t *)TM_LOAD(&set->buckets[i]);
-        // result = 1;
-        // while (b != NULL)
-        // {
-        //     if (TM_LOAD(&b->val) == val)
-        //     {
-        //         result = 0;
-        //         break;
-        //     }
-        //     b = (bucket_t *)TM_LOAD(&b->next);
-        // }
-        // if (result)
-        // {
-        //     TM_STORE(&set->buckets[i], new_entry(val, first, 1));
-        // }
-        // TM_COMMIT;
+        START(tx);
+        i = HASH(val);
+        first = b = (__mram_ptr bucket_t *)LOAD(tx, &(set->buckets[i]), *t_aborts);
+        result = 1;
+        while (b != NULL)
+        {
+            v = LOAD_RO(tx, &(b->val), *t_aborts);
+            if (v == val)
+            {
+                result = 0;
+                break;
+            }
+
+            b = (__mram_ptr bucket_t *)LOAD_RO(tx, &(b->next), *t_aborts);
+        }
+
+        if (tx->status == 4)
+        {
+            continue;
+        }
+
+        if (result)
+        {
+            STORE(tx, &(set->buckets[i]), new_entry(val, first, 1), *t_aborts);
+        }
+
+        COMMIT(tx, *t_aborts);
     }
 
     return result;
@@ -174,74 +169,51 @@ int set_add(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t va
 int set_remove(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val)
 {
     int result, i;
-//     bucket_t *b, *prev;
+    __mram_ptr bucket_t *b, *prev;
+    __mram_ptr bucket_t *bucket;
+    val_t v;
 
-// #ifdef DEBUG
-//     printf("++> set_remove(%d)\n", val);
-//     IO_FLUSH;
-// #endif
+    START(tx);
+    i = HASH(val);
+    prev = b = (__mram_ptr bucket_t *)LOAD(tx, &(set->buckets[i]), *t_aborts);
+    result = 0;
 
-//     if (!td)
-//     {
-//         i = HASH(val);
-//         prev = b = set->buckets[i];
-//         result = 0;
-//         while (b != NULL)
-//         {
-//             if (b->val == val)
-//             {
-//                 result = 1;
-//                 break;
-//             }
-//             prev = b;
-//             b = b->next;
-//         }
-//         if (result)
-//         {
-//             if (prev == b)
-//             {
-//                 /* First element of bucket */
-//                 set->buckets[i] = b->next;
-//             }
-//             else
-//             {
-//                 prev->next = b->next;
-//             }
-//             free(b);
-//         }
-//     }
-//     else
-//     {
-//         TM_START(0, RW);
-//         i = HASH(val);
-//         prev = b = (bucket_t *)TM_LOAD(&set->buckets[i]);
-//         result = 0;
-//         while (b != NULL)
-//         {
-//             if (TM_LOAD(&b->val) == val)
-//             {
-//                 result = 1;
-//                 break;
-//             }
-//             prev = b;
-//             b = (bucket_t *)TM_LOAD(&b->next);
-//         }
-//         if (result)
-//         {
-//             if (prev == b)
-//             {
-//                 /* First element of bucket */
-//                 TM_STORE(&set->buckets[i], TM_LOAD(&b->next));
-//             }
-//             else
-//             {
-//                 TM_STORE(&prev->next, TM_LOAD(&b->next));
-//             }
-//             /* Free memory (delayed until commit) */
-//             TM_FREE2(b, sizeof(bucket_t));
-//         }
-//         TM_COMMIT;
-//     }
+    while (b != NULL)
+    {
+        v = LOAD_RO(tx, &(b->val), *t_aborts);
+        if (v == val)
+        {
+            result = 1;
+            break;
+        }
+
+        prev = b;
+        b = (__mram_ptr bucket_t *)LOAD_RO(tx, &(b->next), *t_aborts);
+    }
+
+    if (tx->status == 4)
+    {
+        continue;
+    }
+
+    if (result)
+    {
+        if (prev == b)
+        {
+            /* First element of bucket */
+            bucket = (__mram_ptr bucket_t *)LOAD(tx, &(b->next), *t_aborts);
+            STORE(tx, &(set->buckets[i]), bucket, *t_aborts);
+        }
+        else
+        {
+            bucket = (__mram_ptr bucket_t *)LOAD(tx, &(b->next), *t_aborts);            
+            STORE(tx, &(prev->next), bucket, *t_aborts);
+        }
+        /* Free memory (delayed until commit) */
+        // TM_FREE2(b, sizeof(bucket_t));
+    }
+
+    COMMIT(tx, *t_aborts);
 
     return result;
 }
