@@ -72,7 +72,7 @@ __mram_ptr intset_t *set_new()
     return set;
 }
 
-int set_contains(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val)
+int set_contains(TYPE stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val)
 {
     int result, i;
     __mram_ptr bucket_t *b;
@@ -105,7 +105,7 @@ int set_contains(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val
     return result;
 }
 
-int set_add(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val, int transactional)
+int set_add(TYPE stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val, int transactional)
 {
     int result, i;
     __mram_ptr bucket_t *b, *first;
@@ -166,7 +166,7 @@ int set_add(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t va
     return result;
 }
 
-int set_remove(stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val)
+int set_remove(TYPE stm_tx_t *tx, uint64_t *t_aborts, __mram_ptr intset_t *set, val_t val)
 {
     int result, i;
     __mram_ptr bucket_t *b, *prev;

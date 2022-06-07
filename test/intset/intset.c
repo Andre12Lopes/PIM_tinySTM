@@ -19,7 +19,7 @@
 #include "hash_set.h"
 #endif
 
-#define UPDATE_PERCENTAGE   20
+#define UPDATE_PERCENTAGE   0
 #define SET_INITIAL_SIZE    10
 #define RAND_RANGE          100
 
