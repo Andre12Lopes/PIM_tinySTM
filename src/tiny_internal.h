@@ -10,11 +10,11 @@
 #include "utils.h"
 
 #ifndef R_SET_SIZE
-# define R_SET_SIZE                 45                /* Initial size of read sets */
+# define R_SET_SIZE                 2                /* Initial size of read sets */
 #endif /* ! RW_SET_SIZE */
 
 #ifndef W_SET_SIZE
-# define W_SET_SIZE                 1                /* Initial size of write sets */
+# define W_SET_SIZE                 2                /* Initial size of write sets */
 #endif /* ! RW_SET_SIZE */
 
 #ifndef LOCK_ARRAY_LOG_SIZE
@@ -159,7 +159,8 @@ stm_has_read(TYPE stm_tx_t *tx, volatile stm_word_t *lock)
 {
     TYPE r_entry_t *r;
     
-    PRINT_DEBUG("==> stm_has_read(%p[%lu-%lu],%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, lock);
+    PRINT_DEBUG("==> stm_has_read(%p[%lu-%lu],%p)\n", tx, 
+        (unsigned long)tx->start, (unsigned long)tx->end, lock);
 
     /* Look for read */
     r = tx->r_set.entries;
@@ -182,7 +183,8 @@ stm_has_written(TYPE stm_tx_t *tx, volatile TYPE_ACC stm_word_t *addr)
 {
     TYPE w_entry_t *w;
 
-    PRINT_DEBUG("==> stm_has_written(%p[%lu-%lu],%p)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end, addr);
+    PRINT_DEBUG("==> stm_has_written(%p[%lu-%lu],%p)\n", tx, 
+        (unsigned long)tx->start, (unsigned long)tx->end, addr);
 
     /* Look for write */
     w = tx->w_set.entries;
@@ -204,7 +206,8 @@ stm_allocate_rs_entries(TYPE stm_tx_t *tx, int extend)
     (void) tx;
     (void) extend;
 
-    PRINT_DEBUG("==> stm_allocate_rs_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end,
+    PRINT_DEBUG("==> stm_allocate_rs_entries(%p[%lu-%lu],%d)\n", tx, 
+        (unsigned long)tx->start, (unsigned long)tx->end,
                 extend);
 
     SET_STATUS(tx->status, TX_ABORTED);
@@ -234,7 +237,8 @@ stm_allocate_ws_entries(TYPE stm_tx_t *tx, int extend)
     (void) tx;
     (void) extend;
 
-    PRINT_DEBUG("==> stm_allocate_ws_entries(%p[%lu-%lu],%d)\n", tx, (unsigned long)tx->start, (unsigned long)tx->end,
+    PRINT_DEBUG("==> stm_allocate_ws_entries(%p[%lu-%lu],%d)\n", tx, 
+        (unsigned long)tx->start, (unsigned long)tx->end,
                 extend);
 
     SET_STATUS(tx->status, TX_ABORTED);
@@ -304,10 +308,10 @@ static inline void
 backoff(TYPE stm_tx_t *tx, long attempt)
 {
     unsigned long long stall = TSRandom(tx) & 0xF; //0XFF
-    // stall += attempt >> 2; 
-    stall = stall << attempt;
-    // stall = (stall * 10) << attempt;
-    // stall *= 10;
+    stall += attempt >> 2; 
+    stall *= 10;
+
+    // stall = stall << attempt;
 
     /* CCM: timer function may misbehave */
     volatile unsigned long long  i = 0;
@@ -447,7 +451,8 @@ static inline void
 int_stm_store(TYPE stm_tx_t *tx, volatile __mram_ptr stm_word_t *addr, stm_word_t value)
 {
     PRINT_DEBUG("==> int_stm_store(t=%p[%lu-%lu],a=%p,d=%p-%lu)\n",
-               tx, (unsigned long)tx->start, (unsigned long)tx->end, addr, (void *)value, (unsigned long)value);
+               tx, (unsigned long)tx->start, (unsigned long)tx->end, addr, 
+               (void *)value, (unsigned long)value);
 
     tx->start_write = perfcounter_config(COUNT_CYCLES, false);
 
@@ -467,7 +472,8 @@ int_stm_commit(TYPE stm_tx_t *tx)
 {
     uint64_t t_process_cycles;
 
-    PRINT_DEBUG("==> stm_commit(%p[%lu-%lu])\n", tx, (unsigned long)tx->start, (unsigned long)tx->end);
+    PRINT_DEBUG("==> stm_commit(%p[%lu-%lu])\n", tx, 
+        (unsigned long)tx->start, (unsigned long)tx->end);
 
     /* Decrement nesting level */
     // if (--tx->nesting > 0)
